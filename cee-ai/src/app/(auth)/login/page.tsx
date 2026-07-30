@@ -95,6 +95,10 @@ export default function LoginPage() {
         password: demoPassword,
       });
 
+      // Write cookie to bypass middleware redirect
+      // eslint-disable-next-line
+      document.cookie = `cee_demo_session=${role}; path=/; max-age=86400; SameSite=Lax`;
+
       if (error) {
         // Fallback for standalone frontend demonstration without Supabase config
         console.warn(
@@ -122,7 +126,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
+    <div className="min-h-screen w-full bg-background flex flex-col items-center justify-center p-6 relative">
       {/* Background visual asset overlay — styled as the Stitch Shader */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-accent/20 via-background to-background -z-10" />
 

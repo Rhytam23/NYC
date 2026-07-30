@@ -53,11 +53,15 @@ export async function proxy(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser();
 
+    // Check for quick demo session cookie
+    const demoSession = request.cookies.get("cee_demo_session")?.value;
+    const hasSession = user || demoSession;
+
     // Route protection rules:
     // If user is not logged in and is trying to access dashboard, redirect to login
     const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
 
-    if (!user && isDashboardRoute) {
+    if (!hasSession && isDashboardRoute) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       return NextResponse.redirect(url);
@@ -65,7 +69,7 @@ export async function proxy(request: NextRequest) {
 
     // If user is logged in and trying to access login page, redirect to dashboard
     const isLoginRoute = request.nextUrl.pathname === "/login";
-    if (user && isLoginRoute) {
+    if (hasSession && isLoginRoute) {
       const url = request.nextUrl.clone();
       url.pathname = "/dashboard";
       return NextResponse.redirect(url);

@@ -11,7 +11,6 @@ import {
   User,
   Sparkles,
   ArrowRight,
-  TrendingDown,
   DollarSign,
   CloudRain,
   BrainCircuit,
