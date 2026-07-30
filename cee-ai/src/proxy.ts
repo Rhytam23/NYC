@@ -15,50 +15,63 @@ export async function proxy(request: NextRequest) {
     request,
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options: _options }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
+  const hasEnv =
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-proj");
 
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  // Route protection rules:
-  // If user is not logged in and is trying to access dashboard, redirect to login
-  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
-
-  if (!user && isDashboardRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  if (!hasEnv) {
+    return supabaseResponse;
   }
 
-  // If user is logged in and trying to access login page, redirect to dashboard
-  const isLoginRoute = request.nextUrl.pathname === "/login";
-  if (user && isLoginRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options: _options }) =>
+              request.cookies.set(name, value),
+            );
+            supabaseResponse = NextResponse.next({
+              request,
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options),
+            );
+          },
+        },
+      },
+    );
+
+    // Refresh session if expired
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    // Route protection rules:
+    // If user is not logged in and is trying to access dashboard, redirect to login
+    const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
+
+    if (!user && isDashboardRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+
+    // If user is logged in and trying to access login page, redirect to dashboard
+    const isLoginRoute = request.nextUrl.pathname === "/login";
+    if (user && isLoginRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
+    }
+  } catch (error) {
+    console.warn("Supabase SSR Auth Proxy initialization bypassed:", error);
   }
 
   return supabaseResponse;
