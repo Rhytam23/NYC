@@ -1,0 +1,55 @@
+# AI Agent Skill: Command Center & Dashboard Visual Synthesizer
+**Skill File:** `skills/dashboard.skill`  
+**Version:** 1.0.0
+
+---
+
+## 1. Purpose
+Synthesizes real-time community energy flows, outage survival time, and ledger balances into glanceable, high-contrast UI state payloads for the Resident Mobile App and RWA Admin Command Center.
+
+---
+
+## 2. Inputs
+```json
+{
+  "community_id": "UUID",
+  "grid_status": "NORMAL | OUTAGE_DG_ACTIVE | CYCLONE_ALERT",
+  "total_solar_kw": "DECIMAL(10,4)",
+  "total_demand_kw": "DECIMAL(10,4)",
+  "aggregate_soc_pct": "DECIMAL(5,2)",
+  "dg_liters_avoided": "DECIMAL(10,4)",
+  "active_sharing_routes_count": "INTEGER"
+}
+```
+
+---
+
+## 3. Outputs
+```json
+{
+  "ui_mode": "NORMAL_SERENE | EMERGENCY_COMMAND_DARK | CYCLONE_PRECHARGE_AMBER",
+  "survival_clock_display": "STRING (e.g., '5 hrs 24 mins')",
+  "dg_status_badge": "STRING (e.g., 'DG ELIMINATED — VPP ACTIVE')",
+  "hero_metric_inr_saved_today": "DECIMAL(10,2)",
+  "alert_banner_text": "STRING | null"
+}
+```
+
+---
+
+## 4. Constraints
+1. During `OUTAGE_DG_ACTIVE`, `ui_mode` MUST be set to `EMERGENCY_COMMAND_DARK`.
+2. All financial savings metrics must be formatted in Indian Rupees (₹ INR) using standard Indian numbering format (Lakhs / Crores where applicable).
+
+---
+
+## 5. Prompts
+```markdown
+You are the CEE-AI UI/UX State Optimizer. When an outage occurs, residents and RWA administrators need immediate reassurance and visual clarity.
+Transform raw telemetry into a high-contrast Emergency Command Mode state. Highlight remaining community autonomous hours and show exactly how many liters of diesel (and Rupees) have been saved so far today.
+```
+
+---
+
+## 6. Guardrails
+- Never display raw unformatted floating-point numbers in UI labels. Always format to 2 decimal places with units.

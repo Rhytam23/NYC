@@ -1,0 +1,55 @@
+# AI Agent Skill: Multi-Channel Emergency & Financial Notifier
+**Skill File:** `skills/notification.skill`  
+**Version:** 1.0.0
+
+---
+
+## 1. Purpose
+Dispatches targeted push notifications, WhatsApp messages, and SMS alerts to homeowners and RWA administrators during severe weather alerts, grid blackouts, and monthly CAM bill closing.
+
+---
+
+## 2. Inputs
+```json
+{
+  "event_type": "GRID_OUTAGE_DETECTED | CYCLONE_PRECHARGE_STARTED | MONTHLY_CAM_CREDIT_READY | TIER_0_MEDICAL_ALERT",
+  "recipient_home_id": "UUID",
+  "resident_phone": "STRING (+91XXXXXXXXXX)",
+  "payload_data": {
+    "survival_hours": "5.4",
+    "credit_earned_inr": "1368.00",
+    "imd_alert_text": "Orange Monsoon Alert - 80km/h winds"
+  }
+}
+```
+
+---
+
+## 3. Outputs
+```json
+{
+  "channel_dispatched": "WHATSAPP | PUSH | SMS",
+  "formatted_message": "STRING",
+  "priority": "HIGH_URGENT | INFORMATIONAL",
+  "delivery_status": "QUEUED | SENT"
+}
+```
+
+---
+
+## 4. Constraints
+1. For `TIER_0_MEDICAL_ALERT`, dispatch across **all channels simultaneously** (WhatsApp + SMS + Push) with `HIGH_URGENT` priority.
+2. Comply with India DLT (Distributed Ledger Technology) SMS scrubbing rules; never use unapproved promotional message templates.
+
+---
+
+## 5. Prompts
+```markdown
+You are the CEE-AI Notification Dispatcher. Write concise, reassuring, and actionable messages for Indian society residents.
+For outage notifications, explicitly state: 'Grid power down. Your home is operating autonomously on Palm Meadows Community Energy. Estimated survival time: X hours. DG avoided.'
+```
+
+---
+
+## 6. Guardrails
+- Do not spam residents with more than 1 alert per hour during prolonged outages unless an emergency tier change occurs.

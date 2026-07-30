@@ -1,0 +1,227 @@
+// =============================================================================
+// CEE-AI Prisma Schema
+// Source: docs/DATABASE.md — Faithful translation of PostgreSQL DDL
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// -----------------------------------------------------------------------------
+// 1. COMMUNITIES — Gated Societies / RWAs (DATABASE.md §2 Table 1)
+// -----------------------------------------------------------------------------
+model Community {
+  id              String   @id @default(uuid()) @db.Uuid
+  rwa_name        String   @db.VarChar(255)
+  rwa_code        String   @unique @db.VarChar(64)
+  city            String   @db.VarChar(128)
+  state           String   @default("Karnataka") @db.VarChar(128)
+  discom_name     String   @default("BESCOM") @db.VarChar(128)
+  grid_tariff_inr Decimal  @default(8.5000) @db.Decimal(10, 4)
+  dg_tariff_inr   Decimal  @default(26.0000) @db.Decimal(10, 4)
+  clearing_rate_inr Decimal @default(9.5000) @db.Decimal(10, 4)
+  created_at      DateTime @default(now()) @db.Timestamptz()
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz()
+
+  homes               Home[]
+  monthly_settlements  MonthlySettlement[]
+
+  @@map("communities")
+}
+
+// -----------------------------------------------------------------------------
+// 2. HOMES — Households within a Community (DATABASE.md §2 Table 2)
+// -----------------------------------------------------------------------------
+enum EmergencyTier {
+  TIER_0_MEDICAL
+  TIER_1_LIFELINE
+  TIER_2_BASIC
+  TIER_3_DEFERRABLE
+
+  @@map("emergency_tier")
+}
+
+model Home {
+  id                  String        @id @default(uuid()) @db.Uuid
+  community_id        String        @db.Uuid
+  resident_name       String        @db.VarChar(255)
+  mygate_flat_id      String        @db.VarChar(64)
+  emergency_tier      EmergencyTier @default(TIER_2_BASIC)
+  min_soc_reserve_pct Int           @default(35)
+  has_solar           Boolean       @default(false)
+  has_battery         Boolean       @default(false)
+  has_ev              Boolean       @default(false)
+  created_at          DateTime      @default(now()) @db.Timestamptz()
+  updated_at          DateTime      @default(now()) @updatedAt @db.Timestamptz()
+
+  community            Community          @relation(fields: [community_id], references: [id], onDelete: Cascade)
+  inverters            Inverter[]
+  energy_telemetry     EnergyTelemetry[]
+  ledger_transactions  LedgerTransaction[]
+  monthly_settlements  MonthlySettlement[]
+  user                 User?
+
+  @@unique([community_id, mygate_flat_id], name: "uq_community_flat")
+  @@index([community_id])
+  @@map("homes")
+}
+
+// -----------------------------------------------------------------------------
+// 3. INVERTERS & METERS — HAL Credentials (DATABASE.md §2 Table 3)
+// -----------------------------------------------------------------------------
+enum OemProvider {
+  ENPHASE
+  GOODWE
+  SOLAREDGE
+  SUNGROW
+  GENUS_METER
+  LNT_METER
+
+  @@map("oem_provider")
+}
+
+model Inverter {
+  id                    String      @id @default(uuid()) @db.Uuid
+  home_id               String      @db.Uuid
+  oem_provider          OemProvider
+  serial_number         String      @db.VarChar(128)
+  nameplate_capacity_kw Decimal     @db.Decimal(10, 4)
+  max_export_kw         Decimal     @db.Decimal(10, 4)
+  is_active             Boolean     @default(true)
+  auth_credentials_enc  String      @db.Text // AES-256-GCM encrypted
+  created_at            DateTime    @default(now()) @db.Timestamptz()
+
+  home Home @relation(fields: [home_id], references: [id], onDelete: Cascade)
+
+  @@unique([oem_provider, serial_number], name: "uq_oem_serial")
+  @@index([home_id])
+  @@map("inverters")
+}
+
+// -----------------------------------------------------------------------------
+// 4. ENERGY TELEMETRY — Time-series pulses (DATABASE.md §2 Table 4)
+// Note: TimescaleDB hypertable conversion is done in a raw migration
+// -----------------------------------------------------------------------------
+model EnergyTelemetry {
+  time            DateTime @db.Timestamptz()
+  home_id         String   @db.Uuid
+  solar_gen_kw    Decimal  @default(0.0000) @db.Decimal(10, 4)
+  battery_soc_pct Decimal  @default(0.00) @db.Decimal(5, 2)
+  battery_flow_kw Decimal  @default(0.0000) @db.Decimal(10, 4)
+  home_demand_kw  Decimal  @default(0.0000) @db.Decimal(10, 4)
+  grid_import_kw  Decimal  @default(0.0000) @db.Decimal(10, 4)
+  grid_export_kw  Decimal  @default(0.0000) @db.Decimal(10, 4)
+  grid_status     String   @default("NORMAL") @db.VarChar(32)
+
+  home Home @relation(fields: [home_id], references: [id], onDelete: Cascade)
+
+  @@id([time, home_id])
+  @@index([home_id, time(sort: Desc)])
+  @@map("energy_telemetry")
+}
+
+// -----------------------------------------------------------------------------
+// 5. LEDGER TRANSACTIONS — 15-min Net Energy Credit Accounting (DATABASE.md §2 Table 5)
+// -----------------------------------------------------------------------------
+model LedgerTransaction {
+  id                     String   @id @default(uuid()) @db.Uuid
+  home_id                String   @db.Uuid
+  interval_start         DateTime @db.Timestamptz()
+  interval_end           DateTime @db.Timestamptz()
+  energy_given_kwh       Decimal  @default(0.0000) @db.Decimal(10, 4)
+  energy_received_kwh    Decimal  @default(0.0000) @db.Decimal(10, 4)
+  net_energy_balance_kwh Decimal  @default(0.0000) @db.Decimal(10, 4)
+  clearing_rate_inr      Decimal  @default(9.5000) @db.Decimal(10, 4)
+  net_value_inr          Decimal  @default(0.0000) @db.Decimal(10, 4)
+  audit_signature        String   @db.VarChar(256) // HMAC-SHA256
+  created_at             DateTime @default(now()) @db.Timestamptz()
+
+  home Home @relation(fields: [home_id], references: [id], onDelete: Cascade)
+
+  @@index([home_id, interval_start, interval_end])
+  @@map("ledger_transactions")
+}
+
+// -----------------------------------------------------------------------------
+// 6. MONTHLY SETTLEMENTS — RWA CAM Billing (DATABASE.md §2 Table 6)
+// -----------------------------------------------------------------------------
+enum SettlementStatus {
+  DRAFT
+  CLOSED_EXPORTED
+  DISPUTED
+
+  @@map("settlement_status")
+}
+
+model MonthlySettlement {
+  id                        String           @id @default(uuid()) @db.Uuid
+  community_id              String           @db.Uuid
+  home_id                   String           @db.Uuid
+  billing_year              Int
+  billing_month             Int
+  total_energy_given_kwh    Decimal          @default(0.0000) @db.Decimal(10, 4)
+  total_energy_received_kwh Decimal          @default(0.0000) @db.Decimal(10, 4)
+  net_energy_balance_kwh    Decimal          @default(0.0000) @db.Decimal(10, 4)
+  cam_bill_adjustment_inr   Decimal          @default(0.0000) @db.Decimal(10, 4)
+  dg_liters_saved_equivalent Decimal         @default(0.0000) @db.Decimal(10, 4)
+  status                    SettlementStatus @default(DRAFT)
+  created_at                DateTime         @default(now()) @db.Timestamptz()
+
+  community Community @relation(fields: [community_id], references: [id], onDelete: Cascade)
+  home      Home      @relation(fields: [home_id], references: [id], onDelete: Cascade)
+
+  @@unique([home_id, billing_year, billing_month], name: "uq_home_billing_cycle")
+  @@index([community_id, billing_year, billing_month])
+  @@map("monthly_settlements")
+}
+
+// -----------------------------------------------------------------------------
+// 7. USERS — Authentication (Extended for auth, not in original DATABASE.md)
+// -----------------------------------------------------------------------------
+enum UserRole {
+  RESIDENT
+  RWA_ADMIN
+  COMMUNITY_MANAGER
+  PLATFORM_ADMIN
+
+  @@map("user_role")
+}
+
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique @db.VarChar(255)
+  name          String   @db.VarChar(255)
+  role          UserRole @default(RESIDENT)
+  home_id       String?  @unique @db.Uuid
+  avatar_url    String?  @db.Text
+  auth_provider String   @default("supabase") @db.VarChar(64)
+  created_at    DateTime @default(now()) @db.Timestamptz()
+  updated_at    DateTime @default(now()) @updatedAt @db.Timestamptz()
+
+  home Home? @relation(fields: [home_id], references: [id], onDelete: SetNull)
+
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// 8. AUDIT LOGS — Immutable append-only (from security_rules.md §3)
+// -----------------------------------------------------------------------------
+model AuditLog {
+  id          String   @id @default(uuid()) @db.Uuid
+  actor_id    String?  @db.Uuid
+  action      String   @db.VarChar(128) // e.g., "DISPATCH_COMMAND", "TRIAGE_OVERRIDE"
+  resource    String   @db.VarChar(128)
+  resource_id String?  @db.Uuid
+  details     Json?
+  created_at  DateTime @default(now()) @db.Timestamptz()
+
+  @@index([actor_id])
+  @@index([resource, created_at])
+  @@map("audit_logs")
+}

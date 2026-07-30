@@ -1,0 +1,55 @@
+# AI Agent Skill: Weather Intelligence & Severe Outage Predictor
+**Skill File:** `skills/weather-intelligence.skill`  
+**Version:** 1.0.0
+
+---
+
+## 1. Purpose
+Monitors India Meteorological Department (IMD) severe weather warnings, satellite cloud opacity GRIB feeds, and grid voltage sag telemetry to predict multi-day blackout probabilities and trigger preemptive community battery pre-charging.
+
+---
+
+## 2. Inputs
+```json
+{
+  "community_id": "UUID",
+  "city": "STRING (e.g., Chennai, Bangalore, Mumbai, Kolkata)",
+  "imd_alert_level": "GREEN | YELLOW | ORANGE | RED",
+  "cyclone_or_monsoon_warning_active": "BOOLEAN",
+  "ambient_temperature_celsius": "DECIMAL(5,2)",
+  "grid_voltage_sag_events_past_24h": "INTEGER",
+  "current_community_aggregate_soc_pct": "DECIMAL(5,2)"
+}
+```
+
+---
+
+## 3. Outputs
+```json
+{
+  "outage_probability_score": "DECIMAL(3,2) (0.00 to 1.00)",
+  "precharge_override_triggered": "BOOLEAN",
+  "target_community_soc_pct": "INTEGER (e.g., 100)",
+  "recommended_action_summary": "STRING"
+}
+```
+
+---
+
+## 4. Constraints
+1. If `imd_alert_level == ORANGE` or `RED`, or `cyclone_or_monsoon_warning_active == true`, `outage_probability_score` MUST be evaluated as `>= 0.70`.
+2. When `outage_probability_score >= 0.65`, the skill must output `precharge_override_triggered: true` and set `target_community_soc_pct: 100`.
+
+---
+
+## 5. Prompts
+```markdown
+You are the CEE-AI Weather Intelligence Agent. Your mission is to protect Indian residential societies from prolonged monsoon storms, cyclone blackouts, and heatwave transformer blowouts.
+Analyze the meteorological inputs and grid voltage stability. If an ORANGE or RED alert is active, override standard economic solar self-consumption and command all hybrid inverters in the society to charge batteries to 100% SOC immediately from solar or grid.
+```
+
+---
+
+## 6. Guardrails
+- Do not trigger pre-charging override for minor localized rain without an official IMD weather alert or frequency sag anomaly.
+- Always log the meteorological source ID in `reasoning_audit_code`.

@@ -1,0 +1,66 @@
+# AI Agent Skill: Community Energy Credit Ledger & Netting Validator
+**Skill File:** `skills/community-ledger.skill`  
+**Version:** 1.0.0
+
+---
+
+## 1. Purpose
+Validates and records 15-minute energy credit exchange transactions between surplus and deficit homes, ensuring zero double-billing and enforcing the double-entry accounting invariant.
+
+---
+
+## 2. Inputs
+```json
+{
+  "community_id": "UUID",
+  "interval_start": "ISO-8601 UTC",
+  "interval_end": "ISO-8601 UTC",
+  "transfers": [
+    {
+      "provider_home_id": "UUID",
+      "consumer_home_id": "UUID",
+      "transferred_kwh": "DECIMAL(10,4)"
+    }
+  ],
+  "clearing_rate_inr": "DECIMAL(10,4)"
+}
+```
+
+---
+
+## 3. Outputs
+```json
+{
+  "status": "success",
+  "interval_ledger_entries": [
+    {
+      "home_id": "UUID",
+      "delta_given_kwh": "DECIMAL(10,4)",
+      "delta_received_kwh": "DECIMAL(10,4)",
+      "delta_net_kwh": "DECIMAL(10,4)",
+      "audit_hmac_signature": "STRING"
+    }
+  ],
+  "zero_sum_invariant_verified": "BOOLEAN"
+}
+```
+
+---
+
+## 4. Constraints
+1. `zero_sum_invariant_verified` MUST be true:
+   $$\sum (\text{delta\_given\_kwh}) - \sum (\text{delta\_received\_kwh}) - \text{LineLosses} = 0$$
+2. No household can appear as both `provider_home_id` and `consumer_home_id` in the same transfer pair.
+
+---
+
+## 5. Prompts
+```markdown
+You are the CEE-AI Double-Entry Ledger Auditor. For each 15-minute settlement interval, ingest the energy transfer array and compute the credit increments for providers and debit increments for consumers.
+Verify that the total kWh given equals total kWh received plus distribution line losses. Generate an HMAC-SHA256 signature for every ledger row.
+```
+
+---
+
+## 6. Guardrails
+- If a transfer entry contains a negative `transferred_kwh`, reject the entire interval payload and raise a `TamperedTelemetryError`.

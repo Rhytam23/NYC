@@ -1,0 +1,74 @@
+# AI Agent Skill: Energy Routing & Peer-to-Peer Virtual Dispatcher
+**Skill File:** `skills/energy-routing.skill`  
+**Version:** 1.0.0
+
+---
+
+## 1. Purpose
+Orchestrates real-time energy routing schedules across a participating residential community, matching net surplus solar/battery capacity with net deficit consumption while avoiding Diesel Generator (DG) ignition and preserving life-critical (Tier 0) emergency thresholds.
+
+---
+
+## 2. Inputs
+```json
+{
+  "community_id": "UUID",
+  "timestamp": "ISO-8601 UTC String",
+  "grid_status": "NORMAL | OUTAGE_DG_ACTIVE | CYCLONE_ALERT",
+  "homes": [
+    {
+      "home_id": "UUID",
+      "emergency_tier": "TIER_0_MEDICAL | TIER_1_LIFELINE | TIER_2_BASIC | TIER_3_DEFERRABLE",
+      "min_soc_reserve_pct": "INTEGER (15 to 90)",
+      "current_soc_pct": "DECIMAL(5,2)",
+      "solar_gen_kw": "DECIMAL(10,4)",
+      "home_demand_kw": "DECIMAL(10,4)",
+      "max_export_limit_kw": "DECIMAL(10,4)"
+    }
+  ],
+  "feeder_max_capacity_kw": "DECIMAL(10,4)"
+}
+```
+
+---
+
+## 3. Outputs
+```json
+{
+  "status": "success",
+  "dispatch_schedule": [
+    {
+      "home_id": "UUID",
+      "action": "EXPORT_TO_BUS | IMPORT_FROM_BUS | IDLE | CURTAIL_LOAD",
+      "target_power_kw": "DECIMAL(10,4)",
+      "reasoning_audit_code": "STRING"
+    }
+  ],
+  "dg_ignition_inhibit_signal": "BOOLEAN",
+  "projected_community_survival_hours": "DECIMAL(5,2)"
+}
+```
+
+---
+
+## 4. Constraints
+1. Never command a household battery to discharge below `min_soc_reserve_pct`.
+2. For any home with `emergency_tier == TIER_0_MEDICAL`, never shed load; always allocate priority virtual import capacity.
+3. Total export across all providers must not exceed `feeder_max_capacity_kw`.
+
+---
+
+## 5. Prompts
+```markdown
+You are the CEE-AI Energy Routing Optimizer. Given the current household telemetry array and grid status:
+1. Identify all net surplus providers (`solar_gen_kw + battery_export_kw > home_demand_kw`).
+2. Identify all net deficit consumers.
+3. Calculate optimal power transfers using SciPy linear programming weights (Tier 0 weight=1000, Tier 1=100, Tier 2=10, Tier 3=1).
+4. If `grid_status == OUTAGE_DG_ACTIVE` and aggregate battery storage can cover Tier 0-2 demand, set `dg_ignition_inhibit_signal: true`.
+```
+
+---
+
+## 6. Guardrails
+- If a dispatch instruction violates a hardware inverter's nameplate `max_export_limit_kw`, clamp `target_power_kw` to `max_export_limit_kw`.
+- Never generate rate-limit-violating dispatch commands more than once per 60 seconds per inverter.

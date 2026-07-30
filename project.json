@@ -1,0 +1,43 @@
+{
+  "name": "community-energy-ai",
+  "displayName": "Community Energy Exchange AI (CEE-AI)",
+  "version": "1.0.0",
+  "description": "Software-first AI-powered Community Energy Exchange & Virtual Microgrid Platform optimized for Indian Gated Communities.",
+  "repository": "https://github.com/community-energy-ai/core-platform",
+  "author": "CEE-AI Autonomous Startup Studio",
+  "license": "UNLICENSED",
+  "targetMarket": "India First (Bangalore, Gurgaon, Mumbai, Hyderabad) -> Global Scalability",
+  "architecture": {
+    "softwareFirstVersion1": true,
+    "proprietaryHardwareRequired": false,
+    "primaryDatabase": "PostgreSQL 16 + TimescaleDB",
+    "cacheAndStream": "Redis 7 / Celery",
+    "backendFramework": "FastAPI (Python 3.11+)",
+    "aiMLFramework": "PyTorch + LightGBM + SciPy Optimization",
+    "frontendFramework": "React 18 + Vite + TypeScript + Tailwind CSS"
+  },
+  "coreInvariants": [
+    "Zero Proprietary Hardware in Version 1.0",
+    "Virtual Energy Credit Ledger (CEE Credits) settled via RWA Common Area Maintenance bill netting",
+    "Zero-Sum Ledger Invariant: sum(net_balance) == 0",
+    "Life-Critical (Tier 0 Medical) priority lock during grid blackouts (min 30% SOC)"
+  ],
+  "agentStudioRoles": [
+    "Founder",
+    "Product Manager",
+    "Climate Researcher",
+    "Energy Systems Engineer",
+    "AI Engineer",
+    "Solution Architect",
+    "Software Architect",
+    "UX Researcher",
+    "Infrastructure Engineer",
+    "Security Engineer",
+    "Product Designer",
+    "VC Partner",
+    "Hackathon Judge"
+  ],
+  "documentationDirectory": "/docs",
+  "agentRulesDirectory": "/.agent",
+  "skillsDirectory": "/skills"
+}

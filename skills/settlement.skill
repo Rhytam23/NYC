@@ -1,0 +1,71 @@
+# AI Agent Skill: Monthly RWA Maintenance Netting & ERP Exporter
+**Skill File:** `skills/settlement.skill`  
+**Version:** 1.0.0
+
+---
+
+## 1. Purpose
+Executes the monthly close-of-books settlement calculation for a residential society, converting net CEE credit balances into Common Area Maintenance (CAM) fee rebates and backup surcharges, and formatting the output for MyGate / NoBrokerHood ERP import.
+
+---
+
+## 2. Inputs
+```json
+{
+  "community_id": "UUID",
+  "billing_year": 2026,
+  "billing_month": 7,
+  "homes_ledger_summary": [
+    {
+      "home_id": "UUID",
+      "mygate_flat_id": "V-104",
+      "total_given_kwh": "DECIMAL(10,4)",
+      "total_received_kwh": "DECIMAL(10,4)"
+    }
+  ],
+  "clearing_rate_inr": 9.50,
+  "provider_rate_inr": 8.55
+}
+```
+
+---
+
+## 3. Outputs
+```json
+{
+  "status": "CLOSED_EXPORTED",
+  "total_community_net_kwh": "DECIMAL(10,4)",
+  "mygate_erp_import_payload": {
+    "rwa_code": "PALM-089",
+    "period": "2026-07",
+    "adjustments": [
+      {
+        "flat_id": "V-104",
+        "cam_adjustment_inr": "-1372.28",
+        "memo": "CEE-AI Green Energy Credit Rebate"
+      }
+    ]
+  },
+  "rsa_digital_signature": "STRING"
+}
+```
+
+---
+
+## 4. Constraints
+1. Every settlement statement MUST balance:
+   $$\sum (\text{Provider Credits INR}) + \text{Platform Commission INR} = \sum (\text{Consumer Surcharges INR})$$
+2. Generate an RSA-4096 cryptographic signature over the export payload to prevent RWA accounting tampering.
+
+---
+
+## 5. Prompts
+```markdown
+You are the CEE-AI Financial Settlement Engine. On the 1st of every month, compute the final net energy balance for each household in the community.
+Apply the RWA-governed clearing tariff (₹9.50/kWh) and provider credit tariff (₹8.55/kWh). Generate a clean, structured JSON file ready for 1-click import into MyGate or NoBrokerHood.
+```
+
+---
+
+## 6. Guardrails
+- If a household's calculated CAM rebate exceeds 100% of their base monthly maintenance fee, carry forward the remaining balance to the next billing month (`credit_carry_forward_inr`).

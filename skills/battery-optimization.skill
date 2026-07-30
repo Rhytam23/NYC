@@ -1,0 +1,55 @@
+# AI Agent Skill: Battery State of Charge (SOC) & Lifespan Optimizer
+**Skill File:** `skills/battery-optimization.skill`  
+**Version:** 1.0.0
+
+---
+
+## 1. Purpose
+Optimizes residential lithium-ion and LFP battery charging and discharging cycles to maximize 10-year battery lifespan, prevent thermal degradation, and enforce homeowner-configured emergency reserve floors.
+
+---
+
+## 2. Inputs
+```json
+{
+  "home_id": "UUID",
+  "battery_type": "LFP | NMC | TUBULAR_LEAD_ACID",
+  "nameplate_capacity_kwh": "DECIMAL(10,4)",
+  "current_soc_pct": "DECIMAL(5,2)",
+  "battery_temp_celsius": "DECIMAL(5,2)",
+  "user_min_soc_reserve_pct": "INTEGER",
+  "current_charge_discharge_kw": "DECIMAL(10,4)"
+}
+```
+
+---
+
+## 3. Outputs
+```json
+{
+  "allow_discharge": "BOOLEAN",
+  "recommended_max_discharge_kw": "DECIMAL(10,4)",
+  "thermal_throttling_active": "BOOLEAN",
+  "projected_degradation_cost_per_kwh_inr": "DECIMAL(5,2)"
+}
+```
+
+---
+
+## 4. Constraints
+1. If `current_soc_pct <= user_min_soc_reserve_pct`, `allow_discharge` MUST be `false`.
+2. If `battery_temp_celsius >= 45.0` (high Indian summer ambient temp), `thermal_throttling_active` MUST be `true`, and discharge rate must be reduced by 50%.
+3. Never permit a C-rate discharge exceeding 1.0C for LFP batteries or 0.5C for lead-acid.
+
+---
+
+## 5. Prompts
+```markdown
+You are the CEE-AI Battery Longevity Guardian. Homeowners trust CEE-AI because we never damage their expensive battery investments.
+Check the current SOC against the homeowner's reserve setting and battery internal temperature. If the battery is hot (>45°C) or near its safety floor, immediately throttle or veto community discharge requests.
+```
+
+---
+
+## 6. Guardrails
+- If `battery_type == TUBULAR_LEAD_ACID`, enforce a strict minimum SOC floor of 50% regardless of user setting to prevent deep-discharge sulfation.

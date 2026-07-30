@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json.schemastore.org/mcp-server-config.json",
+  "version": "1.0.0",
+  "description": "Production MCP Server Configuration for Community Energy Exchange AI (CEE-AI) Studio & Agents",
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/home/user/community-energy-ai"],
+      "description": "Provides secure workspace filesystem access for reading/writing docs, code, and test artifacts."
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_PAT>"
+      },
+      "description": "Manages pull requests, issue tracking, and repository workflows for V1 MVP sprints."
+    },
+    "memory": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
+      "description": "Persistent cross-session memory for AI coding agents to retain architectural invariants and ledger rules."
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+      "description": "Enables step-by-step rigorous logical deduction for complex convex optimization and ledger zero-sum verification."
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://postgres:postgres_secure_pass@localhost:5432/cee_ledger_db"],
+      "description": "Allows AI agents to inspect PostgreSQL/TimescaleDB schema, execute SQL migrations, and verify ledger invariants."
+    },
+    "supabase": {
+      "command": "npx",
+      "args": ["-y", "@supabase/mcp-server-supabase"],
+      "env": {
+        "SUPABASE_URL": "<YOUR_SUPABASE_URL>",
+        "SUPABASE_SERVICE_ROLE_KEY": "<YOUR_SUPABASE_KEY>"
+      },
+      "description": "Provides cloud database inspection and real-time WebSocket channel testing for live energy ledger pulses."
+    },
+    "browser": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-browser"],
+      "description": "Headless browser automation for verifying RWA ERP web interfaces and resident dashboard layouts."
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-playwright"],
+      "description": "End-to-end testing engine for validating emergency command center UI responsiveness during simulated grid outages."
+    },
+    "weather": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-weather"],
+      "description": "Ingests real-time meteorological forecasts and severe weather warnings for the Indian subcontinent."
+    },
+    "maps": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-maps"],
+      "description": "Geospatial mapping server for visualizing apartment complexes, transformer feeders, and solar irradiance overlays."
+    },
+    "redis": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-redis", "redis://localhost:6379/0"],
+      "description": "Inspects real-time telemetry queues (`telemetry.raw`) and inverter command rate-limit token buckets."
+    }
+  }
+}
