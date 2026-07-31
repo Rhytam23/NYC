@@ -89,7 +89,7 @@ export default function CommunityDashboard() {
               {vppStats.totalActiveHomes}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              100% cloud-API integrated
+              Edge Gateway & Cloud API
             </p>
           </CardContent>
         </Card>

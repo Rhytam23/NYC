@@ -8,8 +8,32 @@ This document details the file and folder layout of the Community Energy Exchang
 
 ```
 cee-ai/
+├── hardware/                      # Physical hardware documentation & firmware scaffolds
+│   ├── docs/                      # Component and integration specifications
+│   │   ├── OVERVIEW.md            # Hardware architecture overview (deployment diagram)
+│   │   ├── COMPONENTS.md          # Per-component specs (purpose, I/O, protocols, safety)
+│   │   ├── COMMUNICATION.md       # Protocol guide (Modbus RTU, MQTT, SunSpec, OCPP)
+│   │   ├── POWER_REQUIREMENTS.md  # Power budgets per component
+│   │   ├── SAFETY.md              # Failure modes, electrical safety, maintenance
+│   │   └── INTEGRATION_GUIDE.md  # How to configure HAL and upgrade from sim to hardware
+│   ├── electronics/
+│   │   └── README.md              # Wiring diagrams, component sourcing (India), PCB notes
+│   ├── firmware/                  # Firmware scaffolds (not production code)
+│   │   ├── README.md              # Firmware platforms overview
+│   │   ├── edge-gateway/
+│   │   │   └── README.md          # Raspberry Pi 4 cee-edge-agent scaffold
+│   │   └── smart-meter-reader/
+│   │       └── README.md          # ESP32 PlatformIO scaffold
+│   ├── protocols/                 # Communication protocol contracts
+│   │   ├── mqtt-topics.md         # MQTT topic schema (payload examples + ACL config)
+│   │   ├── modbus-registers.md    # Modbus register maps (Genus meter, PYLON BMS, SunSpec)
+│   │   └── api-contract.md        # Edge→Cloud REST API contract
+│   ├── simulations/
+│   │   └── README.md              # Simulation strategy and test scenarios
+│   └── tests/
+│       └── README.md              # Hardware acceptance test plans
 ├── prisma/                        # Database modeling & seed scripts
-│   ├── schema.prisma              # Prisma schema: Community, Home, Inverter, Telemetry, Ledger
+│   ├── schema.prisma              # Prisma schema (Community, Home, Inverter, Telemetry, Ledger, HardwareDevice, HardwareHealthLog)
 │   └── seed.ts                    # Local seed script: Palm Meadows RWA + demo users
 ├── public/                        # Static public assets (favicon)
 ├── src/
@@ -22,6 +46,11 @@ cee-ai/
 │   │   │       ├── ai/            # AI: recommendations, demand/solar forecasts
 │   │   │       ├── auth/          # Auth: login endpoint
 │   │   │       ├── emergency/     # Emergency: outage detection, triage
+│   │   │       ├── hardware/      # Hardware: telemetry ingest, status, heartbeat, dispatch
+│   │   │       │   ├── telemetry/ # POST — edge gateway batch push
+│   │   │       │   ├── status/    # GET  — hardware connectivity status
+│   │   │       │   ├── heartbeat/ # POST — gateway health ping
+│   │   │       │   └── dispatch/  # POST — manual dispatch command (admin)
 │   │   │       ├── ledger/        # Ledger: balance, community settle
 │   │   │       └── telemetry/     # Telemetry: ingest, home, community
 │   │   ├── dashboard/             # Main workspace routes
@@ -64,10 +93,16 @@ cee-ai/
 │   │   └── providers.tsx          # React Query (TanStack) provider
 │   ├── lib/                       # Application utility layers
 │   │   ├── ai/                    # AI Engine modules
-│   │   │   ├── decision-engine.ts         # VPP orchestrator + Gemini integration
+│   │   │   ├── decision-engine.ts         # VPP orchestrator + Gemini + hardware source awareness
 │   │   │   ├── emergency-prioritization.ts # 4-tier medical load shedding
 │   │   │   ├── energy-routing.ts          # Supplier-consumer grid solver
 │   │   │   └── weather-intelligence.ts    # IMD storm risk + force-charge logic
+│   │   ├── hardware/              # Hardware Abstraction Layer (HAL)
+│   │   │   ├── hal.ts             # Singleton HAL: MQTT_EDGE → CLOUD_API → SIMULATED
+│   │   │   ├── types.ts           # Hardware TypeScript interfaces
+│   │   │   └── adapters/
+│   │   │       ├── simulated-adapter.ts  # Realistic simulation of hardware behavior
+│   │   │       └── mqtt-adapter.ts       # MQTT edge gateway adapter (stub)
 │   │   ├── supabase/              # Supabase client adapters
 │   │   │   ├── client.ts          # Browser client (for client components)
 │   │   │   └── server.ts          # Server client (for RSC and API routes)
@@ -75,8 +110,8 @@ cee-ai/
 │   │   ├── prisma.ts              # Prisma singleton connection
 │   │   └── utils.ts               # cn(), formatINR(), formatEnergy(), formatCeeCredits()
 │   └── types/                     # TypeScript type declarations
-│       └── index.ts               # GridStatus, DispatchInstruction, EmergencyTier enums
-├── .env.example                   # Environment variable template
+│       └── index.ts               # GridStatus, DispatchInstruction, EmergencyTier, TelemetrySource, HardwareDevice enums
+├── .env.example                   # Environment variable template (includes HARDWARE_MODE, MQTT vars)
 ├── .gitignore                     # Git exclusion rules
 ├── clean.js                       # Cross-platform workspace cleanup script
 ├── eslint.config.mjs              # ESLint configuration (Next.js + TypeScript)

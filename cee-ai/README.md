@@ -20,6 +20,7 @@ Developed for the **NYC Climate Tech Fellowship 2026**.
 3. **Double-Entry Energy Credit Ledger**: Cryptographically signed 15-minute netting transactions settled directly against resident CAM maintenance bills.
 4. **Severe Weather Intelligence**: Integrates meteorological alerts to execute proactive `FORCE_CHARGE` procedures before anticipated grid outages.
 5. **Pixel-Perfect Responsive Layout**: Full mobile bottom navigation, tablet slide-out drawer, and desktop sidebar rails mapped to custom design specifications.
+6. **Hardware-Optional HAL Gateway**: Seamlessly bridges physical smart meters, BMSs, and inverters locally (via Modbus RTU & MQTT over TLS) while supporting automated cloud API fallback and local simulation.
 
 ---
 

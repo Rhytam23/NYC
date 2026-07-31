@@ -23,6 +23,8 @@ export async function POST(request: NextRequest) {
       "rajesh.sharma@palmmeadows.in",
       "meenakshi.sundaram@palmmeadows.in",
       "president.nair@palmmeadows.in",
+      "manager.patel@palmmeadows.in",
+      "ops.admin@cee-ai.com",
     ];
 
     if (
@@ -46,7 +48,7 @@ export async function POST(request: NextRequest) {
     }
 
     let role = "RESIDENT";
-    let homeId = "home-rajesh-v104";
+    let homeId: string | null = "home-rajesh-v104";
     let name = "Resident User";
 
     if (payload.email === "rajesh.sharma@palmmeadows.in") {
@@ -58,6 +60,14 @@ export async function POST(request: NextRequest) {
       name = "Col. V. K. Nair";
       role = "RWA_ADMIN";
       homeId = "home-nair-c201";
+    } else if (payload.email === "manager.patel@palmmeadows.in") {
+      name = "Amit Patel";
+      role = "COMMUNITY_MANAGER";
+      homeId = null;
+    } else if (payload.email === "ops.admin@cee-ai.com") {
+      name = "Ops Admin";
+      role = "PLATFORM_ADMIN";
+      homeId = null;
     }
 
     return NextResponse.json({

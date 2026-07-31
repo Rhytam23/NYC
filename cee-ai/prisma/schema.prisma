@@ -31,6 +31,7 @@ model Community {
 
   homes               Home[]
   monthly_settlements  MonthlySettlement[]
+  hardware_devices     HardwareDevice[]
 
   @@map("communities")
 }
@@ -65,6 +66,7 @@ model Home {
   energy_telemetry     EnergyTelemetry[]
   ledger_transactions  LedgerTransaction[]
   monthly_settlements  MonthlySettlement[]
+  hardware_devices     HardwareDevice[]
   user                 User?
 
   @@unique([community_id, mygate_flat_id], name: "uq_community_flat")
@@ -108,21 +110,36 @@ model Inverter {
 // 4. ENERGY TELEMETRY — Time-series pulses (DATABASE.md §2 Table 4)
 // Note: TimescaleDB hypertable conversion is done in a raw migration
 // -----------------------------------------------------------------------------
-model EnergyTelemetry {
-  time            DateTime @db.Timestamptz()
-  home_id         String   @db.Uuid
-  solar_gen_kw    Decimal  @default(0.0000) @db.Decimal(10, 4)
-  battery_soc_pct Decimal  @default(0.00) @db.Decimal(5, 2)
-  battery_flow_kw Decimal  @default(0.0000) @db.Decimal(10, 4)
-  home_demand_kw  Decimal  @default(0.0000) @db.Decimal(10, 4)
-  grid_import_kw  Decimal  @default(0.0000) @db.Decimal(10, 4)
-  grid_export_kw  Decimal  @default(0.0000) @db.Decimal(10, 4)
-  grid_status     String   @default("NORMAL") @db.VarChar(32)
+enum TelemetrySource {
+  MQTT_EDGE    // Physical hardware via edge gateway
+  CLOUD_API    // Inverter cloud APIs (Enphase, SolarEdge, GoodWe)
+  SIMULATED    // Mock-store fallback (development / demo)
+  MANUAL       // RWA admin manual override
 
-  home Home @relation(fields: [home_id], references: [id], onDelete: Cascade)
+  @@map("telemetry_source")
+}
+
+model EnergyTelemetry {
+  time               DateTime        @db.Timestamptz()
+  home_id            String          @db.Uuid
+  solar_gen_kw       Decimal         @default(0.0000) @db.Decimal(10, 4)
+  battery_soc_pct    Decimal         @default(0.00) @db.Decimal(5, 2)
+  battery_flow_kw    Decimal         @default(0.0000) @db.Decimal(10, 4)
+  home_demand_kw     Decimal         @default(0.0000) @db.Decimal(10, 4)
+  grid_import_kw     Decimal         @default(0.0000) @db.Decimal(10, 4)
+  grid_export_kw     Decimal         @default(0.0000) @db.Decimal(10, 4)
+  grid_status        String          @default("NORMAL") @db.VarChar(32)
+  // Hardware layer additions:
+  telemetry_source   TelemetrySource @default(SIMULATED)
+  hardware_device_id String?         @db.Uuid  // FK to HardwareDevice (nullable — cloud/sim have none)
+
+  home            Home             @relation(fields: [home_id], references: [id], onDelete: Cascade)
+  hardware_device HardwareDevice?  @relation(fields: [hardware_device_id], references: [id], onDelete: SetNull)
 
   @@id([time, home_id])
   @@index([home_id, time(sort: Desc)])
+  @@index([telemetry_source, time(sort: Desc)])
+  @@index([hardware_device_id])
   @@map("energy_telemetry")
 }
 
@@ -215,7 +232,7 @@ model User {
 model AuditLog {
   id          String   @id @default(uuid()) @db.Uuid
   actor_id    String?  @db.Uuid
-  action      String   @db.VarChar(128) // e.g., "DISPATCH_COMMAND", "TRIAGE_OVERRIDE"
+  action      String   @db.VarChar(128) // e.g., "DISPATCH_COMMAND", "TRIAGE_OVERRIDE", "HARDWARE_FAULT"
   resource    String   @db.VarChar(128)
   resource_id String?  @db.Uuid
   details     Json?
@@ -224,4 +241,78 @@ model AuditLog {
   @@index([actor_id])
   @@index([resource, created_at])
   @@map("audit_logs")
+}
+
+// -----------------------------------------------------------------------------
+// 9. HARDWARE DEVICES — Physical device registry (hardware/docs/COMPONENTS.md)
+// -----------------------------------------------------------------------------
+enum HardwareDeviceType {
+  EDGE_GATEWAY
+  SMART_METER
+  SOLAR_INVERTER
+  BATTERY_BMS
+  EV_CHARGER
+  TEMPERATURE_SENSOR
+
+  @@map("hardware_device_type")
+}
+
+enum HardwareDeviceStatus {
+  ONLINE
+  OFFLINE
+  STALE
+  FAULT
+  PROVISIONING
+  SIMULATED
+
+  @@map("hardware_device_status")
+}
+
+model HardwareDevice {
+  id               String               @id @default(uuid()) @db.Uuid
+  community_id     String               @db.Uuid
+  home_id          String?              @db.Uuid  // null for gateways (community-level)
+  gateway_id       String               @db.VarChar(128) // e.g. "gw-block-a"
+  device_type      HardwareDeviceType
+  label            String               @db.VarChar(255) // e.g. "Meter — Flat V-104"
+  modbus_address   Int?                 // Modbus slave address (1–247); null for non-Modbus
+  status           HardwareDeviceStatus @default(PROVISIONING)
+  firmware_version String?              @db.VarChar(64)
+  last_seen_at     DateTime?            @db.Timestamptz()
+  created_at       DateTime             @default(now()) @db.Timestamptz()
+  updated_at       DateTime             @default(now()) @updatedAt @db.Timestamptz()
+
+  community         Community           @relation(fields: [community_id], references: [id], onDelete: Cascade)
+  home              Home?               @relation(fields: [home_id], references: [id], onDelete: SetNull)
+  energy_telemetry  EnergyTelemetry[]
+  health_logs       HardwareHealthLog[]
+
+  @@index([community_id])
+  @@index([home_id])
+  @@index([gateway_id])
+  @@map("hardware_devices")
+}
+
+// -----------------------------------------------------------------------------
+// 10. HARDWARE HEALTH LOGS — Gateway heartbeats and device health events
+//     (hardware/protocols/mqtt-topics.md §3 Gateway Heartbeat)
+// -----------------------------------------------------------------------------
+model HardwareHealthLog {
+  id                      String   @id @default(uuid()) @db.Uuid
+  hardware_device_id      String   @db.Uuid
+  event_type              String   @db.VarChar(64) // "HEARTBEAT" | "DEVICE_OFFLINE" | "BMS_FAULT" | "VOLTAGE_SAG" | "TAMPER_DETECTED"
+  severity                String   @db.VarChar(16) // "INFO" | "WARNING" | "ERROR" | "CRITICAL"
+  modbus_devices_online   Int?
+  modbus_devices_total    Int?
+  uptime_seconds          Int?
+  local_buffer_records    Int?
+  temperature_c           Decimal? @db.Decimal(5, 2)
+  details                 Json?    // Arbitrary event details
+  created_at              DateTime @default(now()) @db.Timestamptz()
+
+  hardware_device HardwareDevice @relation(fields: [hardware_device_id], references: [id], onDelete: Cascade)
+
+  @@index([hardware_device_id, created_at(sort: Desc)])
+  @@index([event_type, created_at(sort: Desc)])
+  @@map("hardware_health_logs")
 }

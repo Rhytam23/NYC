@@ -99,6 +99,24 @@ export const MOCK_USERS = [
     avatar_url: null,
     auth_provider: "supabase",
   },
+  {
+    id: "user-manager",
+    email: "manager.patel@palmmeadows.in",
+    name: "Amit Patel",
+    role: "COMMUNITY_MANAGER" as UserRole,
+    home_id: null,
+    avatar_url: null,
+    auth_provider: "supabase",
+  },
+  {
+    id: "user-platform-admin",
+    email: "ops.admin@cee-ai.com",
+    name: "Ops Admin",
+    role: "PLATFORM_ADMIN" as UserRole,
+    home_id: null,
+    avatar_url: null,
+    auth_provider: "supabase",
+  },
 ];
 
 export const MOCK_INVERTERS = [

@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "author": "Lumina Community Energy AI",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-slide-switch",
+      "id": "grid_sw",
+      "top": -120,
+      "left": -150,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "bat_pot",
+      "top": 120,
+      "left": -150,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-photoresistor",
+      "id": "solar_ldr",
+      "top": 240,
+      "left": -150,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-i2c-lcd1602",
+      "id": "lcd",
+      "top": -150,
+      "left": 150,
+      "attrs": {
+        "address": "0x27"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_essential",
+      "top": 100,
+      "left": 200,
+      "attrs": {
+        "color": "green"
+      }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_non_essential",
+      "top": 180,
+      "left": 200,
+      "attrs": {
+        "color": "red"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_ess",
+      "top": 100,
+      "left": 120,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_non_ess",
+      "top": 180,
+      "left": 120,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r_ldr",
+      "top": 240,
+      "left": -80,
+      "attrs": {
+        "value": "10000"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:GND.1",
+      "grid_sw:GND",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "bat_pot:GND",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "r_ldr:2",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "lcd:GND",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "led_essential:C",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:GND.1",
+      "led_non_essential:C",
+      "black",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:3V3",
+      "grid_sw:VCC",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:3V3",
+      "bat_pot:VCC",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:3V3",
+      "solar_ldr:VCC",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:3V3",
+      "lcd:VCC",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "grid_sw:SND",
+      "esp:12",
+      "blue",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "bat_pot:SIG",
+      "esp:34",
+      "orange",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "solar_ldr:SIG",
+      "esp:35",
+      "yellow",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "solar_ldr:SIG",
+      "r_ldr:1",
+      "yellow",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "lcd:SDA",
+      "esp:21",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "lcd:SCL",
+      "esp:22",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:18",
+      "r_ess:1",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "r_ess:2",
+      "led_essential:A",
+      "green",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "esp:19",
+      "r_non_ess:1",
+      "red",
+      [
+        "v0"
+      ]
+    ],
+    [
+      "r_non_ess:2",
+      "led_non_essential:A",
+      "red",
+      [
+        "v0"
+      ]
+    ]
+  ]
+}

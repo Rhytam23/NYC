@@ -23,6 +23,7 @@ import {
   Building,
   Home,
   CheckCircle2,
+  Users,
 } from "lucide-react";
 
 /**
@@ -48,78 +49,211 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg(null);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    // Determine role and metadata based on input email
+    let role: "provider" | "consumer" | "admin" | null = null;
+    let demoName = "";
+    const cleanEmail = email.trim().toLowerCase();
 
-      if (error) {
-        setErrorMsg(error.message);
-      } else {
-        router.push("/dashboard");
-        router.refresh();
+    if (cleanEmail === "rajesh.sharma@palmmeadows.in") {
+      role = "provider";
+      demoName = "Rajesh Sharma";
+    } else if (cleanEmail === "meenakshi.sundaram@palmmeadows.in") {
+      role = "consumer";
+      demoName = "Dr. Meenakshi S.";
+    } else if (cleanEmail === "president.nair@palmmeadows.in") {
+      role = "admin";
+      demoName = "Col. V. K. Nair";
+    }
+
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const isRealClient = url && url.startsWith("http") && !url.includes("your-proj");
+
+      if (isRealClient) {
+        let authResult = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+        // Auto-register demo account in Supabase Auth if credentials match but user doesn't exist
+        if (
+          authResult.error &&
+          role &&
+          password === "cee_secure_demo_pass_2026" &&
+          (authResult.error.message.includes("Invalid login credentials") ||
+            authResult.error.message.includes("Email not confirmed") ||
+            authResult.error.status === 400)
+        ) {
+          console.log(`Auto-registering demo account in Supabase Auth: ${cleanEmail}`);
+          const signUpResult = await supabase.auth.signUp({
+            email: cleanEmail,
+            password,
+            options: {
+              data: {
+                name: demoName,
+                role: role === "admin" ? "RWA_ADMIN" : "RESIDENT",
+              },
+            },
+          });
+
+          if (!signUpResult.error) {
+            authResult = await supabase.auth.signInWithPassword({
+              email: cleanEmail,
+              password,
+            });
+          }
+        }
+
+        if (authResult.error) {
+          setErrorMsg(authResult.error.message);
+          setLoading(false);
+          return;
+        }
       }
-    } catch {
+
+      // Successful login or stub client fallback
+      if (role) {
+        // eslint-disable-next-line react-hooks/immutability
+        document.cookie = `cee_demo_session=${role}; path=/; max-age=86400; SameSite=Lax`;
+        localStorage.setItem(
+          "cee_demo_user",
+          JSON.stringify({
+            email: cleanEmail,
+            name: demoName,
+            role: role === "admin" ? "RWA_ADMIN" : "RESIDENT",
+            persona: role,
+          }),
+        );
+      } else {
+        // Generic fallback for any email typed in mock mode
+        // eslint-disable-next-line react-hooks/immutability
+        document.cookie = `cee_demo_session=provider; path=/; max-age=86400; SameSite=Lax`;
+        localStorage.setItem(
+          "cee_demo_user",
+          JSON.stringify({
+            email: cleanEmail,
+            name: cleanEmail.split("@")[0],
+            role: "RESIDENT",
+            persona: "provider",
+          }),
+        );
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
       setErrorMsg("An unexpected error occurred during login.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   // Quick Demo Login Handler for Hackathon/Pitch evaluation
-  const handleQuickLogin = async (role: "provider" | "consumer" | "admin") => {
+  const handleQuickLogin = async (
+    role: "provider" | "consumer" | "admin" | "manager" | "platform_admin"
+  ) => {
     setLoading(true);
     setErrorMsg(null);
 
     // Seed email mapping corresponding to database seed file
     let demoEmail = "";
+    let demoName = "";
+    let userRole = "RESIDENT";
     const demoPassword = "cee_secure_demo_pass_2026";
 
     switch (role) {
       case "provider":
         demoEmail = "rajesh.sharma@palmmeadows.in";
+        demoName = "Rajesh Sharma";
+        userRole = "RESIDENT";
         break;
       case "consumer":
         demoEmail = "meenakshi.sundaram@palmmeadows.in";
+        demoName = "Dr. Meenakshi S.";
+        userRole = "RESIDENT";
         break;
       case "admin":
         demoEmail = "president.nair@palmmeadows.in";
+        demoName = "Col. V. K. Nair";
+        userRole = "RWA_ADMIN";
+        break;
+      case "manager":
+        demoEmail = "manager.patel@palmmeadows.in";
+        demoName = "Amit Patel";
+        userRole = "COMMUNITY_MANAGER";
+        break;
+      case "platform_admin":
+        demoEmail = "ops.admin@cee-ai.com";
+        demoName = "Ops Admin";
+        userRole = "PLATFORM_ADMIN";
         break;
     }
 
     try {
-      // Sign in using Supabase Auth
-      const { error } = await supabase.auth.signInWithPassword({
-        email: demoEmail,
-        password: demoPassword,
-      });
-
-      // Write cookie to bypass middleware redirect
-      // eslint-disable-next-line
+      // 1. Set the cookie so server middleware allows access immediately
+      // eslint-disable-next-line react-hooks/immutability
       document.cookie = `cee_demo_session=${role}; path=/; max-age=86400; SameSite=Lax`;
 
-      if (error) {
-        // Fallback for standalone frontend demonstration without Supabase config
-        console.warn(
-          "Supabase Auth failed or not configured. Proceeding in Frontend Demo mode.",
-        );
-        // Store demo identity locally so components can render persona data
-        localStorage.setItem(
-          "cee_demo_user",
-          JSON.stringify({
+      // 2. Always write the user metadata to localStorage so frontend pages can render persona views
+      localStorage.setItem(
+        "cee_demo_user",
+        JSON.stringify({
+          email: demoEmail,
+          name: demoName,
+          role: userRole,
+          persona: role,
+        }),
+      );
+
+      // 3. Authenticate with Supabase if it's not the stub client
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const isRealClient = url && url.startsWith("http") && !url.includes("your-proj");
+
+      if (isRealClient) {
+        let authResult = await supabase.auth.signInWithPassword({
+          email: demoEmail,
+          password: demoPassword,
+        });
+
+        // Auto-register demo account in Supabase Auth if not already existing
+        if (
+          authResult.error &&
+          (authResult.error.message.includes("Invalid login credentials") ||
+            authResult.error.message.includes("Email not confirmed") ||
+            authResult.error.status === 400)
+        ) {
+          console.log(`Auto-registering demo account in Supabase Auth: ${demoEmail}`);
+          const signUpResult = await supabase.auth.signUp({
             email: demoEmail,
-            role: role === "admin" ? "RWA_ADMIN" : "RESIDENT",
-            persona: role,
-          }),
-        );
-        router.push("/dashboard");
-      } else {
-        router.push("/dashboard");
-        router.refresh();
+            password: demoPassword,
+            options: {
+              data: {
+                name: demoName,
+                role: userRole,
+              },
+            },
+          });
+
+          if (!signUpResult.error) {
+            authResult = await supabase.auth.signInWithPassword({
+              email: demoEmail,
+              password: demoPassword,
+            });
+          }
+        }
+
+        if (authResult.error) {
+          console.warn("Supabase Auth failed, proceeding in frontend simulation mode:", authResult.error.message);
+        }
       }
-    } catch {
-      setErrorMsg("Failed to sign in as demo persona.");
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch (err) {
+      console.warn("Auth exception occurred, proceeding in fallback simulation mode:", err);
+      router.push("/dashboard");
+      router.refresh();
     } finally {
       setLoading(false);
     }
@@ -230,14 +364,14 @@ export default function LoginPage() {
               {
                 role: "provider",
                 title: "Rajesh Sharma",
-                description: "Surplus Provider (Solar + Battery)",
+                description: "Resident Provider (Solar + Battery)",
                 icon: Home,
                 variant: "solar" as const,
               },
               {
                 role: "consumer",
                 title: "Dr. M. Sundaram",
-                description: "Deficit Consumer (Tier 0 Medical)",
+                description: "Resident Consumer (Tier 0 Medical)",
                 icon: Heart,
                 variant: "critical" as const,
               },
@@ -248,12 +382,31 @@ export default function LoginPage() {
                 icon: Building,
                 variant: "warning" as const,
               },
+              {
+                role: "manager",
+                title: "Amit Patel",
+                description: "Community Manager (CAM & Settlements)",
+                icon: Users,
+                variant: "default" as const,
+              },
+              {
+                role: "platform_admin",
+                title: "Ops Admin",
+                description: "Platform Admin (CEE-AI Operations)",
+                icon: ShieldAlert,
+                variant: "critical" as const,
+              },
             ].map((persona) => (
               <button
                 key={persona.role}
                 onClick={() =>
                   handleQuickLogin(
-                    persona.role as "provider" | "consumer" | "admin",
+                    persona.role as
+                      | "provider"
+                      | "consumer"
+                      | "admin"
+                      | "manager"
+                      | "platform_admin",
                   )
                 }
                 disabled={loading}

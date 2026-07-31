@@ -5,16 +5,32 @@ import { checkEmergencyOverride } from "./emergency-prioritization";
 
 /**
  * Decision Engine Service (Master Orchestrator)
- * Source: AI_ENGINE.md §1, prompts.md §2
+ * Source: AI_ENGINE.md §1, prompts.md §2, hardware/docs/INTEGRATION_GUIDE.md
  *
  * Coordinates weather intelligence, triage priority overrides,
  * and supplier-consumer energy routing into a unified dispatch schedule.
+ *
+ * Hardware Integration:
+ * When hardware is online (MQTT_EDGE), `DecisionContext.homes` is populated
+ * by the HAL with real-time readings. The optional `gridVoltageSag` field
+ * on each home's telemetry is sourced from the smart meter's voltage register
+ * (hardware/protocols/modbus-registers.md §1 Input Registers), providing a
+ * higher-fidelity P(Outage) signal than the cloud API fallback.
  */
 
 export interface DecisionContext {
   homes: HomeEnergyTelemetry[];
   gridStatus: GridStatus;
   weather: WeatherTelemetry;
+  /** Active hardware source — from hal.getTelemetrySource() */
+  hardwareSource?: "MQTT_EDGE" | "CLOUD_API" | "SIMULATED";
+  /**
+   * Grid voltage in volts from physical smart meter (optional).
+   * When provided (hardware online), overrides the weather-intelligence
+   * voltage sag parameter for higher accuracy P(Outage) calculation.
+   * Source: hardware/protocols/modbus-registers.md §1 register 0x000A
+   */
+  gridVoltageV?: number;
 }
 
 export interface DecisionOutput {
@@ -22,15 +38,26 @@ export interface DecisionOutput {
   weatherAlertActive: boolean;
   outageProbability: number;
   reason: string;
+  /** Active telemetry source — for audit trail tagging */
+  hardwareSource: "MQTT_EDGE" | "CLOUD_API" | "SIMULATED";
 }
 
 export function runDecisionEngine(context: DecisionContext): DecisionOutput {
-  const { homes, gridStatus, weather } = context;
+  const { homes, gridStatus, weather, hardwareSource, gridVoltageV } = context;
 
-  // 1. Run Weather Intelligence P(Outage) check
-  const weatherEval = evaluateForceCharge(weather);
+  // 1. Build the effective WeatherTelemetry.
+  //    When hardware is online (MQTT_EDGE), use the measured grid voltage from
+  //    the smart meter (hardware/protocols/modbus-registers.md register 0x000A)
+  //    for a more accurate P(Outage) estimate.
+  const effectiveWeather: WeatherTelemetry = {
+    ...weather,
+    ...(gridVoltageV !== undefined ? { gridVoltageSag: gridVoltageV } : {}),
+  };
 
-  // 2. Apply deterministic triage overrides to SOC floors
+  // 2. Run Weather Intelligence P(Outage) check
+  const weatherEval = evaluateForceCharge(effectiveWeather);
+
+  // 3. Apply deterministic triage overrides to SOC floors
   const adjustedHomes = homes.map((h) => {
     const triage = checkEmergencyOverride(
       h.emergencyTier,
@@ -47,7 +74,7 @@ export function runDecisionEngine(context: DecisionContext): DecisionOutput {
     };
   });
 
-  // 3. If Force Charge is active, override standard routing and charge all batteries to 100%
+  // 4. If Force Charge is active, override standard routing and charge all batteries to 100%
   if (weatherEval.shouldForceCharge) {
     const instructions = adjustedHomes
       .filter((h) => h.batterySocPct < 100)
@@ -55,7 +82,7 @@ export function runDecisionEngine(context: DecisionContext): DecisionOutput {
         home_id: h.homeId,
         target_action: "CHARGE" as const,
         power_kw: 3.5, // Standard charge speed
-        reasoning_audit_string: `Storm preparation Alert! Force charging battery to 100% SOC. Outage risk: ${(weatherEval.outageProbability * 100).toFixed(0)}%.`,
+        reasoning_audit_string: `Storm preparation Alert! Force charging battery to 100% SOC. Outage risk: ${(weatherEval.outageProbability * 100).toFixed(0)}%. Data source: ${hardwareSource ?? "SIMULATED"}.`,
       }));
 
     return {
@@ -63,10 +90,11 @@ export function runDecisionEngine(context: DecisionContext): DecisionOutput {
       weatherAlertActive: true,
       outageProbability: weatherEval.outageProbability,
       reason: weatherEval.reason,
+      hardwareSource: hardwareSource ?? "SIMULATED",
     };
   }
 
-  // 4. Otherwise, calculate optimal virtual energy routing paths
+  // 5. Otherwise, calculate optimal virtual energy routing paths
   const routingInstructions = calculateEnergyRouting(adjustedHomes, gridStatus);
 
   return {
@@ -74,6 +102,7 @@ export function runDecisionEngine(context: DecisionContext): DecisionOutput {
     weatherAlertActive: weatherEval.shouldForceCharge,
     outageProbability: weatherEval.outageProbability,
     reason: weatherEval.reason,
+    hardwareSource: hardwareSource ?? "SIMULATED",
   };
 }
 

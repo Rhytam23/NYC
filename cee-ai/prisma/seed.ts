@@ -126,7 +126,25 @@ async function main() {
     },
   });
 
-  console.log("Created user profiles linked to homes.");
+  await prisma.user.create({
+    data: {
+      email: "manager.patel@palmmeadows.in",
+      name: "Amit Patel",
+      role: UserRole.COMMUNITY_MANAGER,
+      home_id: null,
+    },
+  });
+
+  await prisma.user.create({
+    data: {
+      email: "ops.admin@cee-ai.com",
+      name: "Ops Admin",
+      role: UserRole.PLATFORM_ADMIN,
+      home_id: null,
+    },
+  });
+
+  console.log("Created user profiles linked to homes and non-resident admin accounts.");
 
   // 6. Seed Telemetry (Sample 24-hr data)
   const now = new Date();

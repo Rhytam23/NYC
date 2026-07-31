@@ -24,6 +24,18 @@ export type SettlementStatus = "DRAFT" | "CLOSED_EXPORTED" | "DISPUTED";
 export type UserRole =
   "RESIDENT" | "RWA_ADMIN" | "COMMUNITY_MANAGER" | "PLATFORM_ADMIN";
 
+/** Source tag on every EnergyTelemetry record — hardware/docs/INTEGRATION_GUIDE.md */
+export type TelemetrySource =
+  "MQTT_EDGE" | "CLOUD_API" | "SIMULATED" | "MANUAL";
+
+/** Physical hardware device type — hardware/docs/COMPONENTS.md */
+export type HardwareDeviceType =
+  "EDGE_GATEWAY" | "SMART_METER" | "SOLAR_INVERTER" | "BATTERY_BMS" | "EV_CHARGER" | "TEMPERATURE_SENSOR";
+
+/** Hardware device connectivity status */
+export type HardwareDeviceStatus =
+  "ONLINE" | "OFFLINE" | "STALE" | "FAULT" | "PROVISIONING" | "SIMULATED";
+
 /* =============================================================================
    Database Models — from DATABASE.md §2
    ============================================================================= */
@@ -77,6 +89,40 @@ export interface EnergyTelemetry {
   grid_import_kw: number;
   grid_export_kw: number;
   grid_status: GridStatus;
+  // Hardware layer additions:
+  telemetry_source: TelemetrySource;
+  hardware_device_id?: string;
+}
+
+/** Registered physical hardware device — hardware/docs/COMPONENTS.md */
+export interface HardwareDevice {
+  id: string;
+  community_id: string;
+  home_id?: string;
+  gateway_id: string;
+  device_type: HardwareDeviceType;
+  label: string;
+  modbus_address?: number;
+  status: HardwareDeviceStatus;
+  firmware_version?: string;
+  last_seen_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Hardware health event — hardware/protocols/mqtt-topics.md §4 */
+export interface HardwareHealthLog {
+  id: string;
+  hardware_device_id: string;
+  event_type: string;
+  severity: "INFO" | "WARNING" | "ERROR" | "CRITICAL";
+  modbus_devices_online?: number;
+  modbus_devices_total?: number;
+  uptime_seconds?: number;
+  local_buffer_records?: number;
+  temperature_c?: number;
+  details?: Record<string, unknown>;
+  created_at: string;
 }
 
 export interface LedgerTransaction {

@@ -6,10 +6,29 @@ This document details the architectural design, VPP orchestrator mechanisms, dec
 
 ## 🏗️ System Overview
 
-CEE-AI is a software-first Virtual Power Plant (VPP) designed to coordinate residential solar generators and battery storage into a unified virtual microgrid. The system operates on a zero-hardware architecture, interfacing with inverter APIs (e.g., Enphase Cloud) to monitor telemetry, adjust dispatch parameters, and net virtual credits across neighbor connections.
+CEE-AI is a **hardware-optional** Virtual Power Plant (VPP) designed to coordinate residential solar generators and battery storage into a unified virtual microgrid. The system is structured around a **Hardware Abstraction Layer (HAL)** that automatically selects the best available data source:
+
+1. **MQTT_EDGE** — Physical hardware (smart meters, inverters, BMS) connected via an on-premises Raspberry Pi edge gateway
+2. **CLOUD_API** — Inverter cloud APIs (Enphase Enlighten, SolarEdge Monitoring, GoodWe SEMS)
+3. **SIMULATED** — Mock-store fallback for offline demos and development
+
+This layered approach means the software works without any physical hardware and automatically upgrades to real hardware data when an edge gateway comes online. See [`hardware/docs/OVERVIEW.md`](hardware/docs/OVERVIEW.md) for the full hardware architecture.
 
 ```mermaid
 graph TD
+    subgraph Physical ["Physical Hardware Layer (Optional)"]
+        P1[Smart Energy Meters]
+        P2[Solar Inverters - Local Modbus]
+        P3[Battery BMS]
+        P4[EV Chargers - OCPP]
+    end
+
+    subgraph Edge ["Edge Gateway (Raspberry Pi 4)"]
+        E1[Modbus RTU Poller]
+        E2[MQTT Broker - Mosquitto]
+        E3[cee-edge-agent]
+    end
+
     subgraph Clients ["Client Layer"]
         A[Desktop Browser]
         B[Tablet Viewport]
@@ -21,6 +40,7 @@ graph TD
         E[Resident & Admin UI Routes]
         F[REST API Endpoints /api/v1]
         G[VPP Decision Engine Orchestrator]
+        HAL[Hardware Abstraction Layer]
     end
 
     subgraph External ["External Integration Layer"]
@@ -35,6 +55,13 @@ graph TD
         M[Prisma ORM Client]
     end
 
+    P1 & P2 & P3 & P4 -->|RS-485 Modbus| E1
+    E1 --> E2
+    E2 --> E3
+    E3 -->|MQTT TLS + REST POST /hardware/telemetry| HAL
+    J -->|Cloud API Fallback| HAL
+    HAL -->|Simulated Fallback| G
+    HAL --> G
     Clients -->|HTTPS Requests| D
     D --> E
     D --> F
@@ -44,6 +71,7 @@ graph TD
     G -->|Recommendations| H
     G -->|Weather Forecasts| I
     G -->|Dispatch Load Shedding| J
+    G -->|Dispatch Commands| HAL
     F -->|Net Credit Export| K
 ```
 
@@ -92,6 +120,36 @@ The core scheduling and routing decisions are made by the **Decision Engine Orch
 
 ---
 
+## ⚡ Hardware Abstraction Layer
+
+The HAL in `src/lib/hardware/hal.ts` isolates all physical hardware concerns from the AI and API layers. It implements a **priority-ordered source selector**:
+
+```
+┌───────────────────────────────────────────────┐
+│         HAL Source Selection Logic                    │
+│                                                         │
+│   Priority 1: MQTT_EDGE                                │
+│     Physical smart meters / BMS / inverters             │
+│     via Raspberry Pi edge gateway                       │
+│     ↓ (if offline)                                      │
+│   Priority 2: CLOUD_API                                 │
+│     Enphase / SolarEdge / GoodWe cloud polling          │
+│     ↓ (if unavailable)                                  │
+│   Priority 3: SIMULATED                                 │
+│     mock-store.ts fallback (dev / demo)                 │
+└───────────────────────────────────────────────┘
+```
+
+Hardware components are fully documented in [`hardware/docs/COMPONENTS.md`](hardware/docs/COMPONENTS.md).
+
+New API surface for hardware:
+- `POST /api/v1/hardware/telemetry` — Edge gateway pushes batch readings
+- `GET /api/v1/hardware/status` — Dashboard and gateway query connectivity
+- `POST /api/v1/hardware/heartbeat` — Gateway health pings
+- `POST /api/v1/hardware/dispatch` — Manual dispatch commands (admin only)
+
+---
+
 ## 📊 Relational Database Schema & Data Models
 
 CEE-AI uses Supabase PostgreSQL managed through Prisma ORM (`prisma/schema.prisma`).
@@ -99,10 +157,14 @@ CEE-AI uses Supabase PostgreSQL managed through Prisma ORM (`prisma/schema.prism
 ```mermaid
 erDiagram
     Community ||--o{ Home : contains
+    Community ||--o{ HardwareDevice : has
     Home ||--o{ Inverter : owns
-    Home ||--o{ TelemetryLog : tracks
+    Home ||--o{ EnergyTelemetry : tracks
     Home ||--o{ LedgerTransaction : records
     Home ||--o{ MonthlySettlement : settles
+    Home ||--o{ HardwareDevice : has
+    HardwareDevice ||--o{ EnergyTelemetry : sources
+    HardwareDevice ||--o{ HardwareHealthLog : logs
 
     Community {
         string id PK
@@ -138,10 +200,9 @@ erDiagram
         string auth_credentials_enc
     }
 
-    TelemetryLog {
-        string id PK
-        string home_id FK
-        datetime time
+    EnergyTelemetry {
+        datetime time PK
+        string home_id PK FK
         float solar_gen_kw
         float battery_soc_pct
         float battery_flow_kw
@@ -149,6 +210,33 @@ erDiagram
         float grid_import_kw
         float grid_export_kw
         string grid_status "NORMAL | OUTAGE_DG_ACTIVE | CYCLONE_ALERT"
+        string telemetry_source "MQTT_EDGE | CLOUD_API | SIMULATED | MANUAL"
+        string hardware_device_id FK
+    }
+
+    HardwareDevice {
+        string id PK
+        string community_id FK
+        string home_id FK
+        string gateway_id
+        string device_type "EDGE_GATEWAY | SMART_METER | SOLAR_INVERTER | BATTERY_BMS | EV_CHARGER"
+        string label
+        int modbus_address
+        string status "ONLINE | OFFLINE | STALE | FAULT | SIMULATED"
+        string firmware_version
+        datetime last_seen_at
+    }
+
+    HardwareHealthLog {
+        string id PK
+        string hardware_device_id FK
+        string event_type "HEARTBEAT | DEVICE_OFFLINE | BMS_FAULT | VOLTAGE_SAG"
+        string severity "INFO | WARNING | ERROR | CRITICAL"
+        int modbus_devices_online
+        int modbus_devices_total
+        int uptime_seconds
+        float temperature_c
+        json details
     }
 
     LedgerTransaction {
@@ -192,3 +280,6 @@ erDiagram
 1. **Inverter Credentials**: Inverters communicate via OAuth2 tokens. Access and refresh tokens are encrypted using `AES-256-GCM` before being written to the database.
 2. **Auth Proxy Middleware**: `src/proxy.ts` performs server-side JWT session validation using Supabase Auth SSR. It strictly protects dashboard routes (`/dashboard/*`) from unauthorized viewports.
 3. **Emergency Override Resilience**: The prioritization modules run entirely locally on serverless functions without dependency on LLM performance, guaranteeing fail-safe triage operations under all weather conditions.
+4. **Hardware JWT Authentication**: Edge gateways authenticate to the hardware API endpoints using a pre-provisioned HMAC JWT signed with `HARDWARE_EDGE_JWT_SECRET`. Credentials are separate from user session JWTs.
+5. **Dispatch Command Safety Constraints**: The HAL validates all dispatch commands before transmission — power limits, SOC floors, and command expiry are enforced in software (`src/lib/hardware/hal.ts`) independently of the edge gateway.
+6. **Hardware Installation Safety**: All high-voltage electrical work (smart meters, inverters, BESS) requires licensed electricians. See [`hardware/docs/SAFETY.md`](hardware/docs/SAFETY.md) for complete safety requirements.

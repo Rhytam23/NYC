@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { BatteryGauge } from "@/components/energy/battery-gauge";
 import { EnergyFlowVisualizer } from "@/components/energy/energy-flow-visualizer";
 import { LedgerBalanceBadge } from "@/components/energy/ledger-balance-badge";
@@ -37,14 +37,129 @@ export default function ResidentDashboard() {
   >("NORMAL");
 
   // Simulated realtime telemetry state corresponding to Rajesh's home
-  const [telemetry, setTelemetry] = useState({
-    solarGen: 5.82,
-    batterySoc: 78.5,
-    batteryFlow: 1.2, // charging
-    homeDemand: 2.1,
-    netExport: 2.52,
-    ceeCredits: 160.5,
+  const [telemetry, setTelemetry] = useState(() => {
+    const base = {
+      solarGen: 5.82,
+      batterySoc: 78.5,
+      batteryFlow: 1.2, // charging
+      homeDemand: 2.1,
+      netExport: 2.52,
+      ceeCredits: 160.5,
+    };
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("cee_demo_user");
+      if (stored) {
+        try {
+          const user = JSON.parse(stored);
+          if (user.persona === "consumer") {
+            return {
+              solarGen: 0.0,
+              batterySoc: 0.0,
+              batteryFlow: 0.0,
+              homeDemand: 1.2,
+              netExport: -1.2,
+              ceeCredits: -40.0,
+            };
+          } else if (user.persona === "admin") {
+            return {
+              solarGen: 0.0,
+              batterySoc: 0.0,
+              batteryFlow: 0.0,
+              homeDemand: 3.5,
+              netExport: -3.5,
+              ceeCredits: -65.0,
+            };
+          } else if (user.persona === "manager") {
+            return {
+              solarGen: 284.5,
+              batterySoc: 81.2,
+              batteryFlow: 12.4,
+              homeDemand: 310.0,
+              netExport: 25.5,
+              ceeCredits: 4520.0,
+            };
+          } else if (user.persona === "platform_admin") {
+            return {
+              solarGen: 1284.5,
+              batterySoc: 83.5,
+              batteryFlow: 54.2,
+              homeDemand: 1520.0,
+              netExport: -235.5,
+              ceeCredits: 24500.0,
+            };
+          }
+        } catch {}
+      }
+    }
+    return base;
   });
+
+  const [userName] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("cee_demo_user");
+      if (stored) {
+        try {
+          const user = JSON.parse(stored);
+          if (user.persona === "consumer") return "Dr. Meenakshi";
+          if (user.persona === "admin") return "Col. Nair";
+          if (user.persona === "manager") return "Amit";
+          if (user.persona === "platform_admin") return "Ops Admin";
+        } catch {}
+      }
+    }
+    return "Rajesh";
+  });
+
+  const [userMessage] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("cee_demo_user");
+      if (stored) {
+        try {
+          const user = JSON.parse(stored);
+          if (user.persona === "consumer") {
+            return "Your home is protected under Tier 0 Medical priority. Drawing clean backup power from Rajesh's battery.";
+          }
+          if (user.persona === "admin") {
+            return "You are logged in as RWA Admin. You have access to the Emergency Control Center.";
+          }
+          if (user.persona === "manager") {
+            return "You are logged in as Community Manager. Overseeing billing settlements and grid routing for Palm Meadows RWA.";
+          }
+          if (user.persona === "platform_admin") {
+            return "You are logged in as CEE-AI Platform Admin. Overseeing community microgrids across Whitefield DISCOM feeders.";
+          }
+        } catch {}
+      }
+    }
+    return "Your home energy network is balanced and exporting clean power to the community.";
+  });
+
+  const [hardwareStatus, setHardwareStatus] = useState<{
+    hardware_mode: string;
+    active_source: string;
+    hardware_online: boolean;
+    status_label: string;
+    status_color: string;
+    gateway_online: boolean;
+  }>({
+    hardware_mode: "simulated",
+    active_source: "SIMULATED",
+    hardware_online: false,
+    status_label: "Simulation Mode",
+    status_color: "amber",
+    gateway_online: false,
+  });
+
+  useEffect(() => {
+    fetch("/api/v1/hardware/status")
+      .then((res) => res.json())
+      .then((payload) => {
+        if (payload.status === "success" && payload.data) {
+          setHardwareStatus(payload.data);
+        }
+      })
+      .catch((err) => console.error("Error fetching hardware status:", err));
+  }, []);
 
   // Handle simulation of outage
   const toggleOutageSimulation = () => {
@@ -80,11 +195,10 @@ export default function ResidentDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="font-headline text-2xl font-bold text-foreground">
-            Welcome back, Rajesh
+            Welcome back, {userName}
           </h2>
           <p className="text-body-sm text-muted-foreground">
-            Your home energy network is balanced and exporting clean power to
-            the community.
+            {userMessage}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -190,33 +304,35 @@ export default function ResidentDashboard() {
               <Sun className="h-4 w-4" /> Hardware Status
             </CardTitle>
             <CardDescription className="text-xs">
-              Connected OEM: Enphase Cloud
+              Mode: {hardwareStatus.hardware_mode.toUpperCase()}
             </CardDescription>
           </CardHeader>
           <CardContent className="py-6 space-y-4">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Inverter Serial:</span>
-              <span className="font-semibold font-data text-xs">
-                EN-1049283-MEADOWS
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Capacity limit:</span>
-              <span className="font-semibold">8.0 kWp Solar</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Status:</span>
-              <Badge variant="solar" className="text-[10px]">
-                ONLINE & SYNCED
+              <span className="text-muted-foreground">Gateway:</span>
+              <Badge variant={hardwareStatus.gateway_online || hardwareStatus.hardware_mode === "simulated" ? "solar" : "outline"} className="text-[10px]">
+                {hardwareStatus.gateway_online || hardwareStatus.hardware_mode === "simulated" ? "ONLINE" : "OFFLINE"}
               </Badge>
             </div>
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">API Latency:</span>
-              <span className="font-data text-xs">68ms</span>
+              <span className="text-muted-foreground">Active Source:</span>
+              <span className="font-semibold text-xs font-data">
+                {hardwareStatus.active_source}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Status:</span>
+              <span className={`font-semibold text-xs text-${hardwareStatus.status_color}-500`}>
+                {hardwareStatus.status_label}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Local Bus:</span>
+              <span className="font-data text-xs">Modbus RTU (9.6k)</span>
             </div>
           </CardContent>
           <div className="border-t border-border/50 p-4 flex items-center justify-between text-xs text-muted-foreground bg-surface-container-low rounded-b-lg">
-            <span>Next telemetry sync in 34s</span>
+            <span>Next telemetry sync in 15s</span>
           </div>
         </Card>
       </div>

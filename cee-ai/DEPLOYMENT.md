@@ -11,10 +11,11 @@ CEE-AI runs as an optimized Next.js serverless application:
 | Layer | Provider | Purpose |
 |---|---|---|
 | Web UI & Backend APIs | **Vercel** | Serverless Next.js with automatic scaling |
-| Relational Data & Telemetry | **Supabase PostgreSQL** | Energy ledger and telemetry logs |
+| Relational Data & Telemetry | **Supabase PostgreSQL** | Energy ledger, telemetry logs, hardware registry |
 | Auth | **Supabase Auth** | JWT session management with SSR cookies |
 | ORM | **Prisma** | Type-safe DB schema and client generation |
 | AI Decision Dispatch | **Google Gemini API** | Energy recommendations and routing |
+| Hardware Abstraction Layer | **CEE-AI HAL** | Handles physical MQTT_EDGE, CLOUD_API, or SIMULATED inputs |
 
 ---
 
@@ -55,6 +56,17 @@ npx prisma db seed
    - **Build Command**: `npm run build` (default)
 6. Click **Deploy**.
 
+### Step 4: Edge Gateway Provisioning (Optional, for physical hardware)
+
+If deploying physical hardware at a community site:
+1. Solder and mount Raspberry Pi 4 gateways inside DIN-rail enclosures (see [electronics/README.md](file:///e:/NYC/cee-ai/hardware/electronics/README.md)).
+2. Provision smart meters, solar inverters, and battery BMS systems on the local RS-485 Modbus loop.
+3. Configure the `cee-edge-agent` systemd service on each gateway Pi (see [firmware/edge-gateway/README.md](file:///e:/NYC/cee-ai/hardware/firmware/edge-gateway/README.md)) with:
+   - Unique gateway client certificate for MQTT over TLS (port 8883).
+   - Valid JWT token signed with `HARDWARE_EDGE_JWT_SECRET`.
+4. Point the edge agent to the deployed cloud instance base URL: `https://your-cee-ai-app.vercel.app/api/v1/hardware`.
+5. Set the cloud environment variable `HARDWARE_MODE=mqtt_edge` to enable real-time hardware telemetry and dispatch commands.
+
 ---
 
 ## 🔑 Environment Variables Reference
@@ -78,8 +90,15 @@ Configure all variables in Vercel's Environment Variables UI or your local `.env
 | `TIER_0_MEDICAL_MIN_SOC_RESERVE_PCT` | ⚠️ | `30` | Medical tier SOC reserve % |
 | `EMERGENCY_PRECHARGE_SOC_FLOOR_PCT` | ⚠️ | `100` | Force-charge SOC target |
 | `COMMAND_DEBOUNCE_WINDOW_SECONDS` | ⚠️ | `60` | Dispatch command debounce |
+| `HARDWARE_MODE` | ⚠️ | `simulated` | Hardware mode: `simulated` (default), `mqtt_edge`, or `cloud_api` |
+| `MQTT_BROKER_URL` | ❌ | `mqtts://...:8883` | Edge gateway broker URL (required if `mqtt_edge`) |
+| `MQTT_CLIENT_ID` | ❌ | `cee-cloud-consumer` | Broker client identifier (required if `mqtt_edge`) |
+| `MQTT_USERNAME` | ❌ | `cee-cloud` | Broker username (required if `mqtt_edge`) |
+| `MQTT_PASSWORD` | ❌ | `pwd...` | Broker password (required if `mqtt_edge`) |
+| `HARDWARE_EDGE_JWT_SECRET` | ❌ | `min_64_byte_secret` | JWT signing secret for edge auth (required if `mqtt_edge`) |
+| `HARDWARE_STALENESS_TTL_SECONDS`| ⚠️ | `300` | Telemetry expiration time in seconds (default 5 min) |
 
-> ✅ = Required for production | ⚠️ = Optional, platform works with defaults
+> ✅ = Required for production | ⚠️ = Optional, platform works with defaults | ❌ = Required only when physical hardware integration is active
 
 ---
 
@@ -96,6 +115,10 @@ Before going live, confirm the following:
 - [ ] Gemini AI: `/api/v1/ai/recommendations/[homeId]` returns non-fallback content
 - [ ] Responsive: Mobile bottom nav, tablet drawer, desktop sidebar all display correctly
 - [ ] Emergency console: Simulate outage toggle works on dashboard
+- [ ] HAL: Can retrieve telemetry from `/api/v1/hardware/status` successfully in `simulated` mode
+- [ ] HAL: Gateway heartbeat `/api/v1/hardware/heartbeat` registers correctly
+- [ ] HAL: Manual dispatch endpoint `/api/v1/hardware/dispatch` accepts commands and signs command IDs
+- [ ] Safety validation: Dispatch commands violating battery reserve SOC floor are rejected with `DISPATCH_SAFETY_BLOCKED`
 
 ---
 
