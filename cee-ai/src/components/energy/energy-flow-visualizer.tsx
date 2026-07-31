@@ -148,10 +148,10 @@ export function EnergyFlowVisualizer({
           )}
         </svg>
 
-        {/* Grid of Nodes */}
-        <div className="grid grid-cols-2 gap-x-24 gap-y-16 relative z-10">
-          {/* Node 1: Solar */}
-          <div className="flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 justify-self-start">
+        {/* Nodes absolutely positioned to align with SVG coordinates */}
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          {/* Node 1: Solar (80, 70) -> left: 20%, top: 23.33% */}
+          <div className="absolute top-[23.33%] left-[20%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 pointer-events-auto shadow-sm">
             <Sun className="h-6 w-6 text-energy-solar mb-1 animate-spin-slow" />
             <span className="text-xs font-semibold text-muted-foreground uppercase">
               Solar
@@ -161,8 +161,8 @@ export function EnergyFlowVisualizer({
             </span>
           </div>
 
-          {/* Node 2: Home Load */}
-          <div className="flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 justify-self-end">
+          {/* Node 2: Home Load (320, 70) -> left: 80%, top: 23.33% */}
+          <div className="absolute top-[23.33%] left-[80%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 pointer-events-auto shadow-sm">
             <Home className="h-6 w-6 text-energy-battery mb-1" />
             <span className="text-xs font-semibold text-muted-foreground uppercase">
               Home Load
@@ -172,8 +172,8 @@ export function EnergyFlowVisualizer({
             </span>
           </div>
 
-          {/* Node 3: Battery */}
-          <div className="flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 justify-self-start">
+          {/* Node 3: Battery (80, 230) -> left: 20%, top: 76.66% */}
+          <div className="absolute top-[76.66%] left-[20%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 pointer-events-auto shadow-sm">
             <Battery className="h-6 w-6 text-energy-battery mb-1" />
             <span className="text-xs font-semibold text-muted-foreground uppercase">
               Battery
@@ -188,8 +188,8 @@ export function EnergyFlowVisualizer({
             </span>
           </div>
 
-          {/* Node 4: Community Grid */}
-          <div className="flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 justify-self-end">
+          {/* Node 4: Community Grid (320, 230) -> left: 80%, top: 76.66% */}
+          <div className="absolute top-[76.66%] left-[80%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 pointer-events-auto shadow-sm">
             <Zap className="h-6 w-6 text-energy-solar mb-1" />
             <span className="text-xs font-semibold text-muted-foreground uppercase">
               CEE Grid
