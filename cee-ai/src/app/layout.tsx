@@ -1,37 +1,32 @@
 import type { Metadata } from "next";
-import { Inter, Source_Sans_3, JetBrains_Mono, Geist } from "next/font/google";
+import { Inter, Montserrat, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
 /* =============================================================================
-   Stitch Typography Configuration
-   - Inter: Headlines & UI anchors (clean, geometric)
-   - Source Sans 3: Body text & data grids (legibility in dense dashboards)
-   - JetBrains Mono: Labels, telemetry data, timestamps (tabular alignment)
-   - Geist: Standard font for mobile design layout
+   Typography Configuration
+   - Inter: Body (Regular / Medium / SemiBold)
+   - Montserrat: Headings & Numbers (ExtraBold, SemiBold, Bold)
+   - JetBrains Mono: Code & Monospace labels
    ============================================================================= */
 
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
-const sourceSans = Source_Sans_3({
+const montserrat = Montserrat({
   subsets: ["latin"],
-  variable: "--font-source-sans",
+  variable: "--font-montserrat",
   display: "swap",
+  weight: ["600", "700", "800"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-jetbrains",
-  display: "swap",
-});
-
-const geist = Geist({
-  subsets: ["latin"],
-  variable: "--font-geist",
   display: "swap",
 });
 
@@ -66,7 +61,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${sourceSans.variable} ${jetbrainsMono.variable} ${geist.variable} antialiased`}
+        className={`${inter.variable} ${montserrat.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

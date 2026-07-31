@@ -110,11 +110,11 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
       className={cn(
         "flex items-center gap-3 rounded-[var(--radius-lg)] px-3 py-2.5 text-sm font-medium transition-colors duration-150",
         isActive
-          ? "bg-primary/10 text-primary"
-          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+          ? "bg-white text-[#2E7D32]"
+          : "text-white/80 hover:bg-white/10 hover:text-white",
       )}
     >
-      <item.icon className="h-4 w-4 shrink-0" />
+      <item.icon className={cn("h-4 w-4 shrink-0", isActive ? "text-[#2E7D32]" : "text-white")} />
       <span className="flex-1">{item.label}</span>
       {item.badge && (
         <Badge
@@ -122,7 +122,14 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
             item.badgeVariant as
               "solar" | "warning" | "critical" | "default" | undefined
           }
-          className="text-[10px] px-1.5 py-0"
+          className={cn(
+            "text-[10px] px-1.5 py-0 border-none font-semibold",
+            isActive
+              ? "bg-[#2E7D32] text-white"
+              : item.badgeVariant === "critical"
+                ? "bg-red-500 text-white"
+                : "bg-white/20 text-white"
+          )}
         >
           {item.badge}
         </Badge>
@@ -149,22 +156,22 @@ function CollapsibleNavGroup({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors",
+          "flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors rounded-[var(--radius-lg)] hover:bg-white/5",
           hasActiveChild
-            ? "text-primary"
-            : "text-muted-foreground hover:text-foreground",
+            ? "text-white"
+            : "text-white/70 hover:text-white",
         )}
       >
-        <AlertTriangle className="h-3.5 w-3.5" />
+        <AlertTriangle className="h-3.5 w-3.5 text-white" />
         <span className="flex-1 text-left">{group.title}</span>
         {isOpen ? (
-          <ChevronDown className="h-3.5 w-3.5" />
+          <ChevronDown className="h-3.5 w-3.5 text-white" />
         ) : (
-          <ChevronRight className="h-3.5 w-3.5" />
+          <ChevronRight className="h-3.5 w-3.5 text-white" />
         )}
       </button>
       {isOpen && (
-        <div className="ml-2 space-y-0.5">
+        <div className="ml-2 space-y-0.5 mt-0.5">
           {group.items.map((item) => (
             <NavLink
               key={item.href}
@@ -184,17 +191,17 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-[var(--sidebar-width)] flex-col border-r border-border bg-surface-container-lowest">
+    <aside className="flex w-[var(--sidebar-width)] flex-col border-r border-[#1B5E20] bg-gradient-to-b from-[#1B5E20] to-[#2E7D32] text-white">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-2.5 px-6 border-b border-border">
-        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-          <Zap className="h-5 w-5 text-primary-foreground" />
+      <div className="flex h-16 items-center gap-2.5 px-6 border-b border-white/10">
+        <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center">
+          <Zap className="h-5 w-5 text-[#2E7D32]" />
         </div>
         <div>
-          <span className="font-headline text-lg font-bold text-primary">
+          <span className="font-headline text-lg font-bold text-white">
             CEE-AI
           </span>
-          <Activity className="inline ml-1.5 h-3 w-3 text-energy-solar animate-energy-pulse" />
+          <Activity className="inline ml-1.5 h-3 w-3 text-white/80 animate-energy-pulse" />
         </div>
       </div>
 
@@ -203,14 +210,14 @@ export function DashboardSidebar() {
         <nav className="space-y-1 px-3">
           {navigation.map((group, i) => (
             <div key={i}>
-              {i > 0 && <Separator className="my-3" />}
+              {i > 0 && <Separator className="my-3 bg-white/10" />}
 
               {group.collapsible ? (
                 <CollapsibleNavGroup group={group} pathname={pathname} />
               ) : (
                 <div className="space-y-0.5">
                   {group.title && (
-                    <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white/70">
                       {group.title}
                     </div>
                   )}
@@ -229,15 +236,15 @@ export function DashboardSidebar() {
       </ScrollArea>
 
       {/* Community Info Footer */}
-      <div className="border-t border-border p-4">
-        <div className="rounded-[var(--radius-lg)] bg-surface-container p-3">
-          <div className="text-label-caps text-muted-foreground mb-1">
+      <div className="border-t border-white/10 p-4">
+        <div className="rounded-[var(--radius-lg)] bg-white/10 p-3">
+          <div className="text-label-caps text-white/60 mb-1">
             Community
           </div>
-          <div className="font-headline text-sm font-semibold text-foreground">
+          <div className="font-headline text-sm font-semibold text-white">
             Palm Meadows RWA
           </div>
-          <div className="text-body-sm text-muted-foreground">
+          <div className="text-body-sm text-white/75">
             Whitefield, Bangalore
           </div>
         </div>

@@ -6,108 +6,104 @@
    ============================================================================= */
 
 :root {
-  /* --- Stitch Surface Palette (Light Mode) --- */
-  --background: #f8f9ff;
-  --foreground: #0b1c30;
-  --card: #ffffff;
-  --card-foreground: #0b1c30;
-  --popover: #ffffff;
-  --popover-foreground: #0b1c30;
-  --muted: #e5eeff;
-  --muted-foreground: #414848;
-  --accent: #dce9ff;
-  --accent-foreground: #0b1c30;
-  --border: #c1c8c7;
-  --input: #c1c8c7;
-  --ring: #1a3636;
+  /* --- Brand Surface Palette (Light Mode) --- */
+  --background: #FFFFFF;
+  --foreground: #1E293B;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
+  --muted: #F8FAFC;
+  --muted-foreground: #64748B;
+  --accent: #E8F5E9;
+  --accent-foreground: #2E7D32;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #2E7D32;
 
-  /* --- Stitch Primary (Deep Teal) --- */
-  --primary: #1a3636;
-  --primary-foreground: #ffffff;
+  /* --- Brand Primary & Secondary --- */
+  --primary: #2E7D32;
+  --primary-foreground: #FFFFFF;
+  --secondary: #43A047;
+  --secondary-foreground: #FFFFFF;
+  --tertiary: #2563EB;
+  --tertiary-foreground: #FFFFFF;
 
-  /* --- Stitch Secondary (Emerald) --- */
-  --secondary: #006c49;
-  --secondary-foreground: #ffffff;
+  /* --- Brand Functional Colors --- */
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --success: #2E7D32;
+  --success-foreground: #FFFFFF;
+  --warning: #F59E0B;
+  --warning-foreground: #1E293B;
 
-  /* --- Stitch Tertiary (Electric Indigo) --- */
-  --tertiary: #07006f;
-  --tertiary-foreground: #ffffff;
+  /* --- Brand Surface Containers --- */
+  --surface: #FFFFFF;
+  --surface-dim: #F8FAFC;
+  --surface-bright: #FFFFFF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #F8FAFC;
+  --surface-container: #F8FAFC;
+  --surface-container-high: #E2E8F0;
+  --surface-container-highest: #64748B;
 
-  /* --- Stitch Functional Colors --- */
-  --destructive: #ba1a1a;
-  --destructive-foreground: #ffffff;
-  --success: #006c49;
-  --success-foreground: #ffffff;
-  --warning: #f59e0b;
-  --warning-foreground: #0b1c30;
+  /* --- Extended Palette --- */
+  --primary-container: #E8F5E9;
+  --on-primary-container: #2E7D32;
+  --secondary-container: #E8F5E9;
+  --on-secondary-container: #43A047;
+  --tertiary-container: #2563EB;
+  --on-tertiary-container: #FFFFFF;
+  --error-container: #FEE2E2;
+  --on-error-container: #EF4444;
+  --outline: #64748B;
+  --outline-variant: #E2E8F0;
+  --surface-tint: #2E7D32;
+  --inverse-surface: #0F172A;
+  --inverse-on-surface: #FFFFFF;
+  --inverse-primary: #43A047;
 
-  /* --- Stitch Surface Containers --- */
-  --surface: #f8f9ff;
-  --surface-dim: #cbdbf5;
-  --surface-bright: #f8f9ff;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #eff4ff;
-  --surface-container: #e5eeff;
-  --surface-container-high: #dce9ff;
-  --surface-container-highest: #d3e4fe;
-
-  /* --- Stitch Extended Palette --- */
-  --primary-container: #1a3636;
-  --on-primary-container: #829f9f;
-  --secondary-container: #6cf8bb;
-  --on-secondary-container: #00714d;
-  --tertiary-container: #1202ab;
-  --on-tertiary-container: #8b8eff;
-  --error-container: #ffdad6;
-  --on-error-container: #93000a;
-  --outline: #727878;
-  --outline-variant: #c1c8c7;
-  --surface-tint: #476363;
-  --inverse-surface: #213145;
-  --inverse-on-surface: #eaf1ff;
-  --inverse-primary: #aecccc;
-
-  /* --- Layout --- */
+  /* --- Layout & Radii --- */
   --sidebar-width: 280px;
   --header-height: 64px;
-  --radius: 0.5rem;
+  --radius: 1rem; /* 16px border-radius */
 
-  /* --- Energy Status Colors (from ui_rules.md) --- */
-  --energy-solar: #10b981;
-  --energy-battery: #3b82f6;
-  --energy-warning: #f59e0b;
-  --energy-critical: #ef4444;
-  --energy-grid: #6366f1;
+  /* --- Energy Status Colors --- */
+  --energy-solar: #FBBF24;     /* yellow for solar */
+  --energy-battery: #22C55E;   /* green for battery */
+  --energy-warning: #F59E0B;   /* orange for alerts */
+  --energy-critical: #EF4444;  /* red for error */
+  --energy-grid: #7C3AED;      /* purple for grid */
 }
 
-/* Dark mode — Emergency Console & Command Center */
+/* Dark mode overrides for complete brand consistency (no dark cards) */
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --popover: #1e293b;
-  --popover-foreground: #f8fafc;
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  --accent: #1e293b;
-  --accent-foreground: #f8fafc;
-  --border: #334155;
-  --input: #334155;
-  --ring: #aecccc;
-  --primary: #aecccc;
-  --primary-foreground: #003824;
-  --secondary: #4edea3;
-  --secondary-foreground: #003824;
-  --tertiary: #c0c1ff;
-  --tertiary-foreground: #07006c;
-  --destructive: #ff6b6b;
-  --destructive-foreground: #1e293b;
-  --surface: #0f172a;
-  --surface-container: #1e293b;
-  --surface-container-high: #334155;
-  --outline: #475569;
-  --outline-variant: #334155;
+  --background: #FFFFFF;
+  --foreground: #1E293B;
+  --card: #FFFFFF;
+  --card-foreground: #1E293B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1E293B;
+  --muted: #F8FAFC;
+  --muted-foreground: #64748B;
+  --accent: #E8F5E9;
+  --accent-foreground: #2E7D32;
+  --border: #E2E8F0;
+  --input: #E2E8F0;
+  --ring: #2E7D32;
+  --primary: #2E7D32;
+  --primary-foreground: #FFFFFF;
+  --secondary: #43A047;
+  --secondary-foreground: #FFFFFF;
+  --tertiary: #2563EB;
+  --tertiary-foreground: #FFFFFF;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --surface: #FFFFFF;
+  --surface-container: #F8FAFC;
+  --surface-container-high: #E2E8F0;
+  --outline: #64748B;
+  --outline-variant: #E2E8F0;
 }
 
 /* =============================================================================
@@ -150,16 +146,22 @@
   --color-surface-container-low: var(--surface-container-low);
   --color-surface-container-high: var(--surface-container-high);
 
-  /* Stitch typography — Inter (headlines), Source Sans 3 (body), JetBrains Mono (labels) */
-  --font-headline: var(--font-inter);
-  --font-body: var(--font-source-sans);
-  --font-label: var(--font-jetbrains);
+  /* Brand typography */
+  --font-headline: var(--font-montserrat);
+  --font-body: var(--font-inter);
+  --font-label: var(--font-inter);
 
-  /* Stitch border radius */
-  --radius-sm: 0.125rem;
-  --radius-md: 0.375rem;
-  --radius-lg: 0.5rem;
-  --radius-xl: 0.75rem;
+  /* Radii mapping to 16px and 20px */
+  --radius-sm: 0.25rem;      /* 4px */
+  --radius-md: 0.5rem;       /* 8px */
+  --radius-lg: 1rem;         /* 16px */
+  --radius-xl: 1.25rem;      /* 20px */
+
+  /* Enterprise soft shadow */
+  --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.06);
+  --shadow-xl: 0 8px 24px rgba(15, 23, 42, 0.06);
 
   /* Sidebar */
   --sidebar-width: 280px;
@@ -175,7 +177,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-body), "Source Sans 3", system-ui, sans-serif;
+  font-family: var(--font-body), "Inter", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -186,66 +188,67 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-headline), "Inter", system-ui, sans-serif;
+  font-family: var(--font-headline), "Montserrat", system-ui, sans-serif;
 }
 
-/* Monospace for energy data and telemetry */
+/* Montserrat for energy data and telemetry numbers */
 .font-data {
-  font-family: var(--font-label), "JetBrains Mono", monospace;
+  font-family: var(--font-headline), "Montserrat", system-ui, sans-serif;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 /* =============================================================================
-   Stitch Typography Presets
+   Typography Presets
    ============================================================================= */
 .text-display-lg {
-  font-family: var(--font-headline), "Inter", sans-serif;
+  font-family: var(--font-headline), "Montserrat", sans-serif;
   font-size: 48px;
-  font-weight: 700;
+  font-weight: 800; /* ExtraBold */
   line-height: 56px;
   letter-spacing: -0.02em;
 }
 
 .text-headline-lg {
-  font-family: var(--font-headline), "Inter", sans-serif;
+  font-family: var(--font-headline), "Montserrat", sans-serif;
   font-size: 32px;
-  font-weight: 600;
+  font-weight: 800; /* ExtraBold */
   line-height: 40px;
   letter-spacing: -0.01em;
 }
 
 .text-headline-md {
-  font-family: var(--font-headline), "Inter", sans-serif;
+  font-family: var(--font-headline), "Montserrat", sans-serif;
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 600; /* SemiBold */
   line-height: 32px;
 }
 
 .text-body-lg {
-  font-family: var(--font-body), "Source Sans 3", sans-serif;
+  font-family: var(--font-body), "Inter", sans-serif;
   font-size: 18px;
-  font-weight: 400;
+  font-weight: 400; /* Regular */
   line-height: 28px;
 }
 
 .text-body-md {
-  font-family: var(--font-body), "Source Sans 3", sans-serif;
+  font-family: var(--font-body), "Inter", sans-serif;
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 400; /* Regular */
   line-height: 24px;
 }
 
 .text-body-sm {
-  font-family: var(--font-body), "Source Sans 3", sans-serif;
+  font-family: var(--font-body), "Inter", sans-serif;
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 400; /* Regular */
   line-height: 20px;
 }
 
 .text-label-caps {
-  font-family: var(--font-label), "JetBrains Mono", monospace;
+  font-family: var(--font-body), "Inter", sans-serif;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600; /* SemiBold */
   line-height: 16px;
   letter-spacing: 0.05em;
   text-transform: uppercase;

@@ -101,11 +101,11 @@ export default function AiInsights() {
             </div>
             <div className="flex items-center gap-2 text-xs">
               <span className="flex items-center gap-1">
-                <span className="h-3 w-3 bg-energy-solar/20 border border-energy-solar rounded-sm" />{" "}
+                <span className="h-3 w-3 bg-[#FBBF24]/20 border border-[#FBBF24] rounded-sm" />{" "}
                 Solar
               </span>
               <span className="flex items-center gap-1">
-                <span className="h-3 w-3 bg-energy-battery/20 border border-energy-battery rounded-sm" />{" "}
+                <span className="h-3 w-3 bg-[#2563EB]/20 border border-[#2563EB] rounded-sm" />{" "}
                 Load
               </span>
             </div>
@@ -118,15 +118,15 @@ export default function AiInsights() {
               >
                 <defs>
                   <linearGradient id="colorSolar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#FBBF24" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#FBBF24" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorDemand" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
                 <XAxis
                   dataKey="time"
                   tickLine={false}
@@ -145,7 +145,7 @@ export default function AiInsights() {
                 <Area
                   type="monotone"
                   dataKey="Solar"
-                  stroke="#10b981"
+                  stroke="#FBBF24"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorSolar)"
@@ -153,7 +153,7 @@ export default function AiInsights() {
                 <Area
                   type="monotone"
                   dataKey="Demand"
-                  stroke="#3b82f6"
+                  stroke="#2563EB"
                   strokeWidth={2}
                   fillOpacity={1}
                   fill="url(#colorDemand)"
