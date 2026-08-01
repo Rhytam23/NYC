@@ -29,25 +29,34 @@ import {
 export default function AiInsights() {
   const [loading, setLoading] = useState(false);
 
-  // Simulated 24-hour forecast data (smooth Gaussian curves)
-  const forecastData = Array.from({ length: 24 }).map((_, i) => {
-    const hour = (7 + i) % 24; // start from morning 7 AM
+  // Simulated 24-hour forecast data (continuous 00:00 to 23:00)
+  const forecastData = Array.from({ length: 24 }).map((_, hour) => {
+    // 1. Solar Generation (smooth bell-shape: sunrise 6 AM, peak 1 PM, near zero by 6:30 PM, zero at night)
+    let solarVal = 0;
+    if (hour >= 6 && hour <= 19) {
+      solarVal = 260 * Math.exp(-Math.pow(hour - 13.0, 2) / 8.5);
+    }
 
-    // Bell curve solar output + battery release curve (smoothing the afternoon/evening drop over 7 hours)
-    const rawSolar = 280 * Math.exp(-Math.pow(hour - 12, 2) / 10);
-    const batteryRelease = 110 * Math.exp(-Math.pow(hour - 17.2, 2) / 18);
-    const solar = rawSolar + batteryRelease;
+    // 2. Residential Load (smooth daily demand pattern: low night, morning peak, low midday, high evening peak)
+    const baseLoad = 85 + Math.sin(hour * 0.5) * 5 + Math.sin(hour * 2.1) * 3;
+    const morningActive = 75 * Math.exp(-Math.pow(hour - 8.0, 2) / 3.0);
+    const eveningActive = 190 * Math.exp(-Math.pow(hour - 19.5, 2) / 7.5);
+    const demandVal = baseLoad + morningActive + eveningActive;
 
-    // Dual peak household demand (smooth Gaussian double peak with baseline)
-    const baselineDemand = 110;
-    const morningPeak = 130 * Math.exp(-Math.pow(hour - 9, 2) / 5);
-    const eveningPeak = 170 * Math.exp(-Math.pow(hour - 19.5, 2) / 8);
-    const demand = baselineDemand + morningPeak + eveningPeak;
+    // 3. Battery Flow (charge: 11 AM - 3 PM, discharge: 6 PM - 10 PM)
+    let batteryVal = 0;
+    if (hour >= 11 && hour <= 15) {
+      batteryVal = 85 * Math.exp(-Math.pow(hour - 13.0, 2) / 2.0); // positive flow
+    } else if (hour >= 18 && hour <= 22) {
+      batteryVal = -95 * Math.exp(-Math.pow(hour - 20.0, 2) / 2.5); // negative flow
+    }
+    batteryVal += Math.sin(hour * 1.5) * 1.5; // slight realistic noise
 
     return {
-      time: `${hour}:00`,
-      Solar: Math.max(0, parseFloat((solar < 2.5 ? 0 : solar).toFixed(1))),
-      Demand: parseFloat((demand + Math.sin(i) * 5).toFixed(1)),
+      time: `${hour.toString().padStart(2, "0")}:00`,
+      Solar: Math.max(0, parseFloat(solarVal.toFixed(1))),
+      Demand: parseFloat(demandVal.toFixed(1)),
+      Battery: parseFloat(batteryVal.toFixed(1)),
     };
   });
 
@@ -94,15 +103,19 @@ export default function AiInsights() {
                 24-Hour Irradiance & Load Model
               </CardTitle>
               <CardDescription className="text-body-sm text-muted-foreground">
-                Predictive PV output (including VPP battery release) matched against residential secondary bus demand curves.
+                Predictive PV output matched against residential secondary bus demand curves.
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="flex items-center gap-1">
+            <div className="flex items-center gap-3 text-xs">
+              <span className="flex items-center gap-1 font-semibold text-foreground">
                 <span className="h-3 w-3 bg-[#FBBF24]/20 border border-[#FBBF24] rounded-sm" />{" "}
                 Solar
               </span>
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1 font-semibold text-foreground">
+                <span className="h-3 w-3 bg-[#22C55E]/20 border border-[#22C55E] rounded-sm" />{" "}
+                Battery
+              </span>
+              <span className="flex items-center gap-1 font-semibold text-foreground">
                 <span className="h-3 w-3 bg-[#2563EB]/20 border border-[#2563EB] rounded-sm" />{" "}
                 Load
               </span>
@@ -119,6 +132,10 @@ export default function AiInsights() {
                     <stop offset="5%" stopColor="#FBBF24" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#FBBF24" stopOpacity={0} />
                   </linearGradient>
+                  <linearGradient id="colorBattery" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22C55E" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#22C55E" stopOpacity={0} />
+                  </linearGradient>
                   <linearGradient id="colorDemand" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2563EB" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
@@ -132,6 +149,7 @@ export default function AiInsights() {
                 />
                 <YAxis
                   tickLine={false}
+                  domain={['dataMin - 15', 'dataMax + 40']}
                   style={{ fontSize: 10, fontFamily: "var(--font-label)" }}
                 />
                 <Tooltip
@@ -144,15 +162,23 @@ export default function AiInsights() {
                   type="monotone"
                   dataKey="Solar"
                   stroke="#FBBF24"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   fillOpacity={1}
                   fill="url(#colorSolar)"
                 />
                 <Area
                   type="monotone"
+                  dataKey="Battery"
+                  stroke="#22C55E"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#colorBattery)"
+                />
+                <Area
+                  type="monotone"
                   dataKey="Demand"
                   stroke="#2563EB"
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   fillOpacity={1}
                   fill="url(#colorDemand)"
                 />
