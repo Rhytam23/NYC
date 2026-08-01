@@ -15,6 +15,7 @@ import {
   Zap,
   ShieldAlert,
   Settings,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,12 +51,51 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
     return "Rajesh S.";
   });
 
+  // Full User Profile State for Dropdown Popover
+  const [userProfile] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    org: string;
+    persona: string;
+  }>(() => {
+    let name = "Rajesh Sharma";
+    let email = "rajesh.sharma@palmmeadows.in";
+    let role = "Resident";
+    let org = "Palm Meadows RWA";
+    let persona = "resident";
+
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("cee_demo_user");
+      if (stored) {
+        try {
+          const user = JSON.parse(stored);
+          if (user.name) name = user.name;
+          if (user.email) email = user.email;
+          if (user.persona) persona = user.persona;
+          if (user.persona === "consumer") {
+            role = "Medical Priority Consumer";
+          } else if (user.persona === "admin") {
+            role = "RWA Board President";
+          } else if (user.persona === "manager") {
+            role = "Community Energy Manager";
+          } else if (user.persona === "platform_admin") {
+            role = "Platform Operations Director";
+            org = "CEE-AI Grid Systems";
+          }
+        } catch {}
+      }
+    }
+    return { name, email, role, org, persona };
+  });
+
   // Search Palette State
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Notifications State
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(true);
 
   // Close Search Dialog on Escape Key
@@ -221,9 +261,9 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
         {/* User Dropdown/SignOut Combo */}
         <div className="flex items-center gap-2 border-l border-border pl-2 sm:pl-3 ml-1 sm:ml-2 relative">
           <div 
-            onClick={() => router.push("/dashboard/profile")}
+            onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
             className="flex items-center gap-1.5 px-2 py-1 text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-lg transition-colors"
-            title="View Profile"
+            title="View Profile Actions"
           >
             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <User className="h-4 w-4 text-primary" />
@@ -242,6 +282,121 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
           >
             <LogOut className="h-4 w-4" />
           </Button>
+
+          {/* Profile Dropdown Popover */}
+          {isProfileDropdownOpen && (
+            <>
+              {/* Click outside overlay */}
+              <div
+                className="fixed inset-0 z-40 bg-transparent"
+                onClick={() => setIsProfileDropdownOpen(false)}
+              />
+              <div className="absolute right-0 top-12 w-72 bg-card border border-border rounded-[18px] shadow-xl z-50 p-4 space-y-4 animate-in fade-in zoom-in-95 duration-150 font-data text-xs">
+                {/* Header: Large profile avatar, Full name, Role, Org, Status */}
+                <div className="flex gap-3 items-start pb-3 border-b border-border">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-headline font-bold text-sm text-foreground truncate block max-w-[140px]">
+                        {userProfile.name}
+                      </span>
+                      <span className="h-2 w-2 rounded-full bg-green-500 shrink-0 animate-pulse" title="Online" />
+                    </div>
+                    <span className="text-[10px] font-semibold text-primary block leading-tight truncate">
+                      {userProfile.role}
+                    </span>
+                    <span className="text-[10px] font-medium text-muted-foreground block truncate">
+                      {userProfile.org}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Account details */}
+                <div className="space-y-2 bg-surface-container-low/40 p-2.5 rounded-xl border border-border/60">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-semibold">Email</span>
+                    <span className="text-foreground font-medium truncate max-w-[140px]" title={userProfile.email}>
+                      {userProfile.email}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-semibold">Community</span>
+                    <span className="text-foreground font-medium truncate max-w-[140px]">
+                      {userProfile.org}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground font-semibold">Last Login</span>
+                    <span className="text-foreground font-medium whitespace-nowrap">
+                      Just now
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground font-semibold">Status</span>
+                    <Badge variant="outline" className="bg-green-50 border-green-200 text-green-700 font-bold py-0 text-[9px]">
+                      Active
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Quick actions */}
+                <div className="flex flex-col gap-1 border-t border-border pt-3">
+                  <button
+                    onClick={() => {
+                      setIsProfileDropdownOpen(false);
+                      router.push("/dashboard/profile");
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-muted text-left font-bold text-foreground transition-colors"
+                  >
+                    <User className="h-3.5 w-3.5 text-primary" />
+                    View Profile
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsProfileDropdownOpen(false);
+                      router.push("/dashboard/settings");
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-muted text-left font-bold text-foreground transition-colors"
+                  >
+                    <Settings className="h-3.5 w-3.5 text-primary" />
+                    Account Settings
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsProfileDropdownOpen(false);
+                      router.push("/dashboard/profile?tab=preferences");
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-muted text-left font-bold text-foreground transition-colors"
+                  >
+                    <Bell className="h-3.5 w-3.5 text-primary" />
+                    Notifications
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsProfileDropdownOpen(false);
+                      alert("CEE-AI Grid Operations Center support portal is active. Incident ID: INC-87291.");
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-muted text-left font-bold text-foreground transition-colors"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5 text-primary" />
+                    Help & Support
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsProfileDropdownOpen(false);
+                      handleSignOut();
+                    }}
+                    className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-red-50 hover:text-red-700 text-left font-bold text-foreground transition-colors border-t border-border/40 mt-1"
+                  >
+                    <LogOut className="h-3.5 w-3.5 text-red-500" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Notifications Dropdown Card */}
           {isNotificationsOpen && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -32,6 +32,19 @@ import {
 
 export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Synchronize active tab from URL query params
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      if (tab && ["overview", "security", "preferences"].includes(tab)) {
+        Promise.resolve().then(() => {
+          setActiveTab(tab);
+        });
+      }
+    }
+  }, []);
 
   // Read demo user from localStorage if available
   const [profileData] = useState(() => {
@@ -81,6 +94,8 @@ export default function ProfilePage() {
       organization: org,
       accessLevel: access,
       lastLogin: new Date().toLocaleString(),
+      address: "Villa V-104, Palm Meadows Phase 1, Whitefield, Bangalore, Karnataka 560066",
+      timezone: "Asia/Kolkata (IST, UTC+05:30)",
     };
   });
 
@@ -133,6 +148,8 @@ export default function ProfilePage() {
                   </span>
                   <span>•</span>
                   <span>ID: {profileData.employeeId}</span>
+                  <span>•</span>
+                  <span>Org: {profileData.organization}</span>
                 </div>
               </div>
             </div>
@@ -194,25 +211,53 @@ export default function ProfilePage() {
       {/* Tab Contents */}
       {activeTab === "overview" && (
         <div className="space-y-6">
-          {/* About Section */}
-          <Card className="border border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-headline-md text-foreground">About Professional</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-xs text-muted-foreground leading-relaxed font-medium">
-                {profileData.about}
-              </p>
-            </CardContent>
-          </Card>
+          {/* About & Contact Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-headline-md text-foreground">About Professional</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground leading-relaxed font-medium">
+                  {profileData.about}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-headline-md text-foreground">Contact & Timezone Details</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs font-semibold text-muted-foreground space-y-3 pt-2">
+                <div className="flex justify-between border-b border-border/40 pb-2">
+                  <span className="text-muted-foreground">Email Address</span>
+                  <span className="text-foreground font-medium">{profileData.email}</span>
+                </div>
+                <div className="flex justify-between border-b border-border/40 pb-2">
+                  <span className="text-muted-foreground">Phone Number</span>
+                  <span className="text-foreground font-medium">{profileData.phone}</span>
+                </div>
+                <div className="flex justify-between border-b border-border/40 pb-2">
+                  <span className="text-muted-foreground">Office Address</span>
+                  <span className="text-foreground font-medium text-right max-w-[220px] leading-tight">
+                    {profileData.address}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Discom Timezone</span>
+                  <span className="text-foreground font-medium">{profileData.timezone}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* Activity Summary Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { label: "Dispatches Reviewed", value: "342", sub: "+12 this week", icon: Activity, color: "text-[#2E7D32]" },
-              { label: "Active Communities", value: "1", sub: "Palm Meadows", icon: Building, color: "text-blue-600" },
               { label: "AI Decisions Approved", value: "98.4%", sub: "Decision rate", icon: Cpu, color: "text-purple-600" },
               { label: "Reports Generated", value: "24", sub: "Monthly CAM metrics", icon: FileText, color: "text-amber-600" },
+              { label: "Communities Managed", value: "1", sub: "Palm Meadows RWA", icon: Building, color: "text-blue-600" },
             ].map((stat, i) => (
               <Card key={i} className="border border-border">
                 <CardContent className="p-4 flex items-center justify-between font-data">
