@@ -29,26 +29,25 @@ import {
 export default function AiInsights() {
   const [loading, setLoading] = useState(false);
 
-  // Simulated 24-hour forecast data (bell curve solar vs dual-peak demand)
+  // Simulated 24-hour forecast data (smooth Gaussian curves)
   const forecastData = Array.from({ length: 24 }).map((_, i) => {
     const hour = (7 + i) % 24; // start from morning 7 AM
 
-    // Bell curve solar output
-    let solar = 0;
-    if (hour >= 6 && hour <= 18) {
-      const peakHour = 12;
-      solar = 320 * Math.exp(-Math.pow(hour - peakHour, 2) / 16);
-    }
+    // Bell curve solar output + battery release curve (smoothing the afternoon/evening drop over 7 hours)
+    const rawSolar = 280 * Math.exp(-Math.pow(hour - 12, 2) / 10);
+    const batteryRelease = 110 * Math.exp(-Math.pow(hour - 17.2, 2) / 18);
+    const solar = rawSolar + batteryRelease;
 
-    // Dual peak household demand
-    let demand = 140;
-    if (hour >= 8 && hour <= 10) demand = 260; // morning peak
-    if (hour >= 18 && hour <= 21) demand = 310; // evening peak
+    // Dual peak household demand (smooth Gaussian double peak with baseline)
+    const baselineDemand = 110;
+    const morningPeak = 130 * Math.exp(-Math.pow(hour - 9, 2) / 5);
+    const eveningPeak = 170 * Math.exp(-Math.pow(hour - 19.5, 2) / 8);
+    const demand = baselineDemand + morningPeak + eveningPeak;
 
     return {
       time: `${hour}:00`,
-      Solar: Math.max(0, parseFloat(solar.toFixed(1))),
-      Demand: parseFloat((demand + Math.sin(i) * 10).toFixed(1)),
+      Solar: Math.max(0, parseFloat((solar < 2.5 ? 0 : solar).toFixed(1))),
+      Demand: parseFloat((demand + Math.sin(i) * 5).toFixed(1)),
     };
   });
 
@@ -95,8 +94,7 @@ export default function AiInsights() {
                 24-Hour Irradiance & Load Model
               </CardTitle>
               <CardDescription className="text-body-sm text-muted-foreground">
-                Predictive PV output matched against residential secondary bus
-                demand curves.
+                Predictive PV output (including VPP battery release) matched against residential secondary bus demand curves.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2 text-xs">
