@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { BatteryGauge } from "@/components/energy/battery-gauge";
 import { EnergyFlowVisualizer } from "@/components/energy/energy-flow-visualizer";
 import { LedgerBalanceBadge } from "@/components/energy/ledger-balance-badge";
@@ -461,9 +462,11 @@ export default function ResidentDashboard() {
             </div>
           </CardContent>
           <div className="p-6 pt-0">
-            <Button className="w-full" variant="outline">
-              View Detailed AI Schedule
-              <ArrowRight className="h-4 w-4 ml-1.5" />
+            <Button className="w-full" variant="outline" asChild>
+              <Link href="/dashboard/ai-insights">
+                View Detailed AI Schedule
+                <ArrowRight className="h-4 w-4 ml-1.5" />
+              </Link>
             </Button>
           </div>
         </Card>
