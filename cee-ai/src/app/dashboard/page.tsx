@@ -75,23 +75,43 @@ export default function ResidentDashboard() {
     demandVal = 0.8;
   }
 
-  // Battery flow & SOC logic
+  // Battery flow, SOC and Grid flow (netExport) logic
   let flowVal = 0;
   let socVal = 50;
+  let netExportVal = 0;
 
-  if (simulatedHour >= 6 && simulatedHour < 12) {
-    flowVal = solarVal - demandVal; // Charging (positive)
-    socVal = 40 + (simulatedHour - 6) * 9; // 40% to 85%
-  } else if (simulatedHour >= 12 && simulatedHour < 15) {
-    flowVal = -1.82; // Discharging
-    socVal = 85 - (simulatedHour - 12) * 5; // 85% to 70%
-  } else if (simulatedHour >= 15 && simulatedHour < 18) {
-    flowVal = solarVal - demandVal; // Charging slightly
-    socVal = 70 + (simulatedHour - 15) * 5; // 70% to 85%
+  if (simulatedHour >= 6 && simulatedHour < 18) {
+    // MORNING TIME (6 AM to 6 PM): Grid is not used (0.0 kW)
+    netExportVal = 0.0;
+    
+    // Battery balances solar and demand: flow = solar - demand
+    flowVal = solarVal - demandVal;
+    
+    if (simulatedHour < 12) {
+      socVal = 35 + (simulatedHour - 6) * 8.3; // rises to ~85%
+    } else {
+      socVal = 85 - (simulatedHour - 12) * 1.5; // slight sag
+    }
   } else {
-    flowVal = -demandVal * 0.4; // Discharging slowly
+    // NIGHT TIME (6 PM to 6 AM): Solar is 0.0 kW
+    solarVal = 0.0;
     const hrsSince18 = simulatedHour >= 18 ? simulatedHour - 18 : simulatedHour + 6;
-    socVal = Math.max(20, 85 - hrsSince18 * 4.5); // 85% down to ~30%
+    socVal = Math.max(20, 76 - hrsSince18 * 6.5); // drains towards 20%
+
+    if (socVal > 20) {
+      // Battery is first priority: supply up to 1.8 kW of demand
+      const maxBatteryDischarge = 1.8;
+      const batteryDischarge = Math.min(demandVal, maxBatteryDischarge);
+      flowVal = -batteryDischarge; // Discharging
+      
+      // Grid is second priority: supplies the remainder of demand
+      const gridImport = demandVal - batteryDischarge;
+      netExportVal = -gridImport;
+    } else {
+      // Battery is empty: grid supplies 100% of demand (second priority)
+      flowVal = 0.0;
+      netExportVal = -demandVal;
+    }
   }
 
   // Adjust for different personas
@@ -99,30 +119,34 @@ export default function ResidentDashboard() {
     solarVal = 0;
     flowVal = 0;
     socVal = 0;
+    netExportVal = -demandVal; // Consumer imports 100% from grid
   } else if (activePersona === "admin") {
     solarVal = solarVal * 0.8;
     flowVal = flowVal * 0.8;
+    netExportVal = netExportVal * 0.8;
   } else if (activePersona === "manager") {
     solarVal = solarVal * 50;
     demandVal = demandVal * 55;
     flowVal = flowVal * 45;
     socVal = 81.2;
+    netExportVal = netExportVal * 50;
   } else if (activePersona === "platform_admin") {
     solarVal = solarVal * 250;
     demandVal = demandVal * 270;
     flowVal = flowVal * 220;
     socVal = 83.5;
+    netExportVal = netExportVal * 250;
   }
 
-  // Outage logic override
+  // Outage logic override (Grid disconnected)
   if (gridStatus !== "NORMAL") {
     solarVal = Math.min(solarVal, 3.2);
     flowVal = -1.5;
     demandVal = 2.0;
     socVal = Math.max(35, socVal - 10);
+    netExportVal = 0.0; // Server connection severed
   }
 
-  const netExportVal = solarVal - demandVal - flowVal;
   const ceeCreditsVal = 160.5 + (solarVal - demandVal) * 2;
 
   const telemetry = {
