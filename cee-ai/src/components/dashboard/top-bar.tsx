@@ -105,6 +105,12 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
       path: "/dashboard/settings",
       icon: Settings,
     },
+    {
+      name: "User Profile",
+      description: "Manage your credentials, notification preferences, and assigned communities",
+      path: "/dashboard/profile",
+      icon: User,
+    },
   ];
 
   // Filter items based on search query
@@ -214,7 +220,11 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
 
         {/* User Dropdown/SignOut Combo */}
         <div className="flex items-center gap-2 border-l border-border pl-2 sm:pl-3 ml-1 sm:ml-2 relative">
-          <div className="flex items-center gap-1.5 px-2 py-1 text-muted-foreground">
+          <div 
+            onClick={() => router.push("/dashboard/profile")}
+            className="flex items-center gap-1.5 px-2 py-1 text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-lg transition-colors"
+            title="View Profile"
+          >
             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <User className="h-4 w-4 text-primary" />
             </div>

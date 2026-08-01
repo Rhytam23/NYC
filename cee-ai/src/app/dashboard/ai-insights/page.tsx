@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -243,8 +244,10 @@ export default function AiInsights() {
             </div>
           </CardContent>
           <div className="p-4 border-t border-border/50 bg-surface-container-low rounded-b-lg">
-            <Button size="sm" className="w-full text-xs" variant="outline">
-              Review Dispatch Logs
+            <Button size="sm" className="w-full text-xs" variant="outline" asChild>
+              <Link href="/dashboard/ai-insights/dispatch-logs">
+                Review Dispatch Logs
+              </Link>
             </Button>
           </div>
         </Card>
