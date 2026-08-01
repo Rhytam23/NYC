@@ -255,9 +255,11 @@ export async function dbQuerySafe<T>(
   try {
     return await prismaQuery();
   } catch {
-    console.warn(
-      "Database connection issue. Using CEE-AI offline mock fallback data.",
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "Database connection issue. Using CEE-AI offline mock fallback data.",
+      );
+    }
     return fallbackData;
   }
 }

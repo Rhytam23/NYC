@@ -100,8 +100,8 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <header className="relative pt-32 pb-20 px-6 md:px-8 overflow-hidden bg-gradient-to-tr from-secondary-container/5 via-background to-background">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-secondary-container/10 via-transparent to-transparent"></div>
+      <header className="relative pt-32 pb-20 px-6 md:px-8 overflow-hidden bg-linear-to-tr from-secondary-container/5 via-background to-background">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,var(--tw-gradient-stops))] from-secondary-container/10 via-transparent to-transparent"></div>
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-10">
           <div className="flex-1 space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-secondary-container/30 border border-secondary/20">
@@ -448,7 +448,7 @@ export default function LandingPage() {
           <h2 className="font-headline text-headline-lg mb-12">
             Community Microgrid Topology
           </h2>
-          <div className="relative w-full aspect-video md:aspect-[21/9] bg-primary-container/20 rounded-2xl border border-white/10 flex items-center justify-center p-6 overflow-hidden">
+          <div className="relative w-full aspect-video md:aspect-21/9 bg-primary-container/20 rounded-2xl border border-white/10 flex items-center justify-center p-6 overflow-hidden">
             {/* SVG Diagram */}
             <svg
               className="absolute inset-0 w-full h-full p-6 md:p-12"
@@ -722,8 +722,8 @@ export default function LandingPage() {
 
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
-        <div className="fixed inset-0 bg-primary/80 backdrop-blur-sm z-[60] flex">
-          <div className="w-[280px] bg-card h-full flex flex-col py-6 px-4 gap-6 animate-in slide-in-from-left duration-300">
+        <div className="fixed inset-0 bg-primary/80 backdrop-blur-sm z-60 flex">
+          <div className="w-70 bg-card h-full flex flex-col py-6 px-4 gap-6 animate-in slide-in-from-left duration-300">
             <div className="flex items-center justify-between">
               <span className="font-headline text-xl font-bold text-primary">
                 CEE-AI

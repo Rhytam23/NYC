@@ -156,9 +156,11 @@ export async function generateGeminiRecommendations(
       .trim();
     return JSON.parse(cleanText) as string[];
   } catch {
-    console.error(
-      "Gemini recommendation error, using default fallback suggestions.",
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.error(
+        "Gemini recommendation error, using default fallback suggestions.",
+      );
+    }
     return [
       `Your battery is at ${soc}% State of Charge. Reserve floor set to 35%.`,
       solarGen > demand

@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dbQuerySafe, runtimeState } from "@/lib/mock-store";
+import { z } from "zod";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireAuth,
+  safeErrorResponse,
+} from "@/lib/security";
 
 /**
  * GET /api/v1/telemetry/home/{home_id}
@@ -12,8 +19,24 @@ export async function GET(
   { params }: { params: Promise<{ homeId: string }> },
 ) {
   const { homeId } = await params;
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
+
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "telemetry-home",
+    maxRequests: 60,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Authentication
+  const authResponse = requireAuth(request, meta);
+  if (authResponse) return authResponse;
+
+  // 3. Input Validation (Safe alphanumeric/hyphen pattern)
+  if (!z.string().regex(/^[a-zA-Z0-9\-]+$/).max(64).safeParse(homeId).success) {
+    return safeErrorResponse("INVALID_PARAMETER", "homeId must be a valid alphanumeric/hyphen string.", meta, 400);
+  }
 
   try {
     const dbData = async () => {
@@ -99,25 +122,9 @@ export async function GET(
     return NextResponse.json({
       status: "success",
       data,
-      meta: {
-        timestamp,
-        request_id: reqId,
-      },
+      meta,
     });
   } catch {
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "HOME_DATA_FAILED",
-          message: "Failed to retrieve home telemetry context.",
-        },
-        meta: {
-          timestamp,
-          request_id: reqId,
-        },
-      },
-      { status: 500 },
-    );
+    return safeErrorResponse("HOME_DATA_FAILED", "Failed to retrieve home telemetry context.", meta, 500);
   }
 }

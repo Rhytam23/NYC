@@ -75,10 +75,12 @@ class HardwareAbstractionLayer {
           return reading;
         }
       } catch {
-        console.warn(
-          `[HAL] MQTT edge adapter unavailable for home ${homeId}. ` +
-          "Falling back to SIMULATED.",
-        );
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(
+            `[HAL] MQTT edge adapter unavailable for home ${homeId}. ` +
+            "Falling back to SIMULATED.",
+          );
+        }
       }
     }
 
@@ -86,9 +88,11 @@ class HardwareAbstractionLayer {
     // When HARDWARE_MODE=cloud_api, the Enphase/SolarEdge/GoodWe
     // cloud polling adapters will be called here.
     if (this.mode === "cloud_api") {
-      console.warn(
-        "[HAL] CLOUD_API mode is not yet implemented. Falling back to SIMULATED.",
-      );
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "[HAL] CLOUD_API mode is not yet implemented. Falling back to SIMULATED.",
+        );
+      }
     }
 
     // Final fallback: always available

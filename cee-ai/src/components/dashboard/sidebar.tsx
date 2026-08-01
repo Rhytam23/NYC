@@ -108,7 +108,7 @@ function NavLink({ item, isActive }: { item: NavItem; isActive: boolean }) {
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-3 rounded-[var(--radius-lg)] px-3 py-2.5 text-sm font-medium transition-colors duration-150",
+        "flex items-center gap-3 rounded-(--radius-lg) px-3 py-2.5 text-sm font-medium transition-colors duration-150",
         isActive
           ? "bg-white text-[#2E7D32]"
           : "text-white/80 hover:bg-white/10 hover:text-white",
@@ -156,7 +156,7 @@ function CollapsibleNavGroup({
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors rounded-[var(--radius-lg)] hover:bg-white/5",
+          "flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors rounded-(--radius-lg) hover:bg-white/5",
           hasActiveChild
             ? "text-white"
             : "text-white/70 hover:text-white",
@@ -191,7 +191,7 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-[var(--sidebar-width)] flex-col border-r border-[#1B5E20] bg-gradient-to-b from-[#1B5E20] to-[#2E7D32] text-white">
+    <aside className="flex w-(--sidebar-width) flex-col border-r border-[#1B5E20] bg-linear-to-b from-[#1B5E20] to-[#2E7D32] text-white">
       {/* Logo */}
       <div className="flex h-16 items-center gap-2.5 px-6 border-b border-white/10">
         <div className="h-8 w-8 rounded-lg bg-white flex items-center justify-center">
@@ -237,7 +237,7 @@ export function DashboardSidebar() {
 
       {/* Community Info Footer */}
       <div className="border-t border-white/10 p-4">
-        <div className="rounded-[var(--radius-lg)] bg-white/10 p-3">
+        <div className="rounded-(--radius-lg) bg-white/10 p-3">
           <div className="text-label-caps text-white/60 mb-1">
             Community
           </div>

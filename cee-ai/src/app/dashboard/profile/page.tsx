@@ -123,7 +123,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       {/* Header Profile Section */}
       <Card className="border border-border overflow-hidden">
-        <div className="h-32 bg-gradient-to-r from-[#1B5E20] to-[#2E7D32]" />
+        <div className="h-32 bg-linear-to-r from-[#1B5E20] to-[#2E7D32]" />
         <CardContent className="pt-0 relative px-6 pb-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between -mt-16 gap-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-4 text-center sm:text-left">
@@ -239,7 +239,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="flex justify-between border-b border-border/40 pb-2">
                   <span className="text-muted-foreground">Office Address</span>
-                  <span className="text-foreground font-medium text-right max-w-[220px] leading-tight">
+                  <span className="text-foreground font-medium text-right max-w-55 leading-tight">
                     {profileData.address}
                   </span>
                 </div>
@@ -326,7 +326,7 @@ export default function ProfilePage() {
                   { title: "Exported microgrid transaction logs for CAM accounting", time: "July 30, 2026, 3:30 PM", icon: Database, color: "text-teal-600" },
                 ].map((act, i) => (
                   <div key={i} className="relative flex gap-3 text-xs">
-                    <div className="absolute -left-[19px] h-6 w-6 rounded-full bg-white flex items-center justify-center border border-border text-xs z-10 shrink-0">
+                    <div className="absolute -left-4.75 h-6 w-6 rounded-full bg-white flex items-center justify-center border border-border text-xs z-10 shrink-0">
                       <act.icon className={`h-3.5 w-3.5 ${act.color}`} />
                     </div>
                     <div>

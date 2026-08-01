@@ -222,7 +222,11 @@ export default function ResidentDashboard() {
           setHardwareStatus(payload.data);
         }
       })
-      .catch((err) => console.error("Error fetching hardware status:", err));
+      .catch((err) => {
+        if (process.env.NODE_ENV !== "production") {
+          console.error("Error fetching hardware status:", err);
+        }
+      });
   }, []);
 
   // Handle simulation of outage

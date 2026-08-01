@@ -1,0 +1,4 @@
+[wokwi]
+version = 1
+firmware = 'ESP32 HTTP Server/esp32-http-server.ino'
+elf = 'ESP32 HTTP Server/esp32-http-server.elf'

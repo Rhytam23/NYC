@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dbQuerySafe } from "@/lib/mock-store";
 import { z } from "zod";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireRole,
+  validateBodySize,
+  safeErrorResponse,
+  safeValidationError,
+} from "@/lib/security";
 
 const ledgerSettleSchema = z.object({
   community_id: z.string().uuid(),
@@ -11,17 +19,38 @@ const ledgerSettleSchema = z.object({
 
 /**
  * POST /api/v1/ledger/settle
- * Role required: RWA_ADMIN
+ * Role required: RWA_ADMIN, COMMUNITY_MANAGER, or PLATFORM_ADMIN
  * Closes the billing period and exports the ledger netting summary.
  * Source: API_SPEC.md §2.4
  */
 export async function POST(request: NextRequest) {
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
+
+  // 1. Rate Limiting (10 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "ledger-settle",
+    maxRequests: 10,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Body Size Validation (max 10KB)
+  const sizeResponse = await validateBodySize(request, 10 * 1024, meta);
+  if (sizeResponse) return sizeResponse;
+
+  // 3. Authentication & Authorization
+  const authResponse = requireRole(request, ["RWA_ADMIN", "COMMUNITY_MANAGER", "PLATFORM_ADMIN"], meta);
+  if (authResponse) return authResponse;
 
   try {
     const body = await request.json();
-    const payload = ledgerSettleSchema.parse(body);
+    const parsed = ledgerSettleSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return safeValidationError(parsed.error, meta);
+    }
+
+    const payload = parsed.data;
 
     const dbSettle = async () => {
       // Execute transactional update of settlements status to CLOSED_EXPORTED
@@ -63,43 +92,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       status: "success",
       data,
-      meta: {
-        timestamp,
-        request_id: reqId,
-      },
+      meta,
     });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: "error",
-          error: {
-            code: "VALIDATION_FAILED",
-            message: "Settle parameters validation failed.",
-            details: error.flatten(),
-          },
-          meta: {
-            timestamp,
-            request_id: reqId,
-          },
-        },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "SETTLEMENT_FAILED",
-          message: "Failed to execute monthly ledger netting settlement.",
-        },
-        meta: {
-          timestamp,
-          request_id: reqId,
-        },
-      },
-      { status: 500 },
-    );
+  } catch {
+    return safeErrorResponse("SETTLEMENT_FAILED", "Failed to execute monthly ledger netting settlement.", meta, 500);
   }
 }

@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireAuth,
+  safeErrorResponse,
+} from "@/lib/security";
 
 /**
  * GET /api/v1/ai/forecast/demand/{community_id}
@@ -9,33 +16,50 @@ export async function GET(
   { params }: { params: Promise<{ communityId: string }> },
 ) {
   const { communityId } = await params;
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
 
-  // Generate 24 hourly data points starting from current hour
-  const hourlyForecast = Array.from({ length: 24 }).map((_, i) => {
-    const hour = (new Date().getHours() + i) % 24;
-    // Simulate typical household double peak (morning 8-10 AM, evening 7-9 PM)
-    let baseLoad = 120; // kW base community load
-    if (hour >= 8 && hour <= 10) baseLoad = 280;
-    if (hour >= 19 && hour <= 21) baseLoad = 340;
-    return {
-      hour: `${hour}:00`,
-      demand_forecast_kw: baseLoad + Math.random() * 30,
-    };
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "ai-forecast-demand",
+    maxRequests: 60,
+    windowSeconds: 60,
   });
+  if (rateLimitResponse) return rateLimitResponse;
 
-  return NextResponse.json({
-    status: "success",
-    data: {
-      community_id: communityId,
-      forecast_resolution: "1_hour",
-      forecast_horizon: "24_hours",
-      series: hourlyForecast,
-    },
-    meta: {
-      timestamp,
-      request_id: reqId,
-    },
-  });
+  // 2. Authentication
+  const authResponse = requireAuth(request, meta);
+  if (authResponse) return authResponse;
+
+  // 3. Input Validation (UUID)
+  if (!z.string().uuid().safeParse(communityId).success) {
+    return safeErrorResponse("INVALID_PARAMETER", "communityId must be a valid UUID.", meta, 400);
+  }
+
+  try {
+    // Generate 24 hourly data points starting from current hour
+    const hourlyForecast = Array.from({ length: 24 }).map((_, i) => {
+      const hour = (new Date().getHours() + i) % 24;
+      // Simulate typical household double peak (morning 8-10 AM, evening 7-9 PM)
+      let baseLoad = 120; // kW base community load
+      if (hour >= 8 && hour <= 10) baseLoad = 280;
+      if (hour >= 19 && hour <= 21) baseLoad = 340;
+      return {
+        hour: `${hour}:00`,
+        demand_forecast_kw: baseLoad + Math.random() * 30,
+      };
+    });
+
+    return NextResponse.json({
+      status: "success",
+      data: {
+        community_id: communityId,
+        forecast_resolution: "1_hour",
+        forecast_horizon: "24_hours",
+        series: hourlyForecast,
+      },
+      meta,
+    });
+  } catch {
+    return safeErrorResponse("FORECAST_FAILED", "Failed to retrieve demand forecast.", meta, 500);
+  }
 }

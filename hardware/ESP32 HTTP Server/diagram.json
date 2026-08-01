@@ -3,13 +3,13 @@
   "author": "Lumina AI OS",
   "editor": "wokwi",
   "parts": [
-    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 100, "left": 180, "attrs": {} },
+    { "type": "wokwi-esp32", "id": "esp", "top": 100, "left": 180, "attrs": {} },
     { 
-      "type": "wokwi-lcd1602", 
+      "type": "wokwi-i2c-lcd1602", 
       "id": "lcd", 
       "top": -120, 
       "left": 140, 
-      "attrs": { "pins": "i2c", "label": "Lumina Telemetry Display" } 
+      "attrs": { "address": "0x27", "label": "Lumina Telemetry Display" } 
     },
     { 
       "type": "wokwi-slide-switch", 
@@ -26,7 +26,7 @@
       "attrs": { "label": "Battery SoC (%)" } 
     },
     { 
-      "type": "wokwi-photoresistor-sensor", 
+      "type": "wokwi-photoresistor", 
       "id": "ldr", 
       "top": 250, 
       "left": -120, 
@@ -96,10 +96,12 @@
     [ "esp:5V", "relay1:VCC", "red", [ "v0" ] ],
     [ "esp:GND.1", "relay1:GND", "black", [ "v0" ] ],
     [ "esp:18", "relay1:IN", "orange", [ "v0" ] ],
+    [ "esp:5V", "relay1:COM", "red", [ "v0" ] ],
 
     [ "esp:5V", "relay2:VCC", "red", [ "v0" ] ],
     [ "esp:GND.1", "relay2:GND", "black", [ "v0" ] ],
     [ "esp:19", "relay2:IN", "purple", [ "v0" ] ],
+    [ "esp:5V", "relay2:COM", "red", [ "v0" ] ],
 
     [ "relay1:NO", "r1:1", "green", [ "v0" ] ],
     [ "r1:2", "led_essential:A", "green", [ "v0" ] ],

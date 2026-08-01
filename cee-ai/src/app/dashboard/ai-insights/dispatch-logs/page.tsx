@@ -317,7 +317,7 @@ export default function DispatchLogsPage() {
           />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col font-data text-xs animate-[scaleIn_0.2s_ease-out]">
             {/* Header */}
-            <div className="p-5 border-b border-border bg-gradient-to-r from-primary/5 to-transparent flex justify-between items-center">
+            <div className="p-5 border-b border-border bg-linear-to-r from-primary/5 to-transparent flex justify-between items-center">
               <div>
                 <h3 className="font-headline font-bold text-base text-foreground">
                   Dispatch Audit Report
@@ -345,7 +345,7 @@ export default function DispatchLogsPage() {
                   <span className="text-muted-foreground font-semibold uppercase block text-[9px]">
                     Gateway Status
                   </span>
-                  <span className="text-base font-bold text-energy-solar mt-0.5 block flex items-center gap-1 font-headline">
+                  <span className="text-base font-bold text-energy-solar mt-0.5 flex items-center gap-1 font-headline">
                     <CheckCircle2 className="h-4 w-4" /> ONLINE
                   </span>
                 </div>
@@ -353,7 +353,7 @@ export default function DispatchLogsPage() {
 
               {/* Event details parameters */}
               <div className="space-y-3">
-                <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1 font-semibold">
+                <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1">
                   <Info className="h-3.5 w-3.5 text-primary" /> Dispatch Parameters
                 </h4>
                 <div className="border border-border rounded-xl divide-y divide-border bg-surface-container-low/40">
@@ -390,7 +390,7 @@ export default function DispatchLogsPage() {
 
               {/* Reasoning summary */}
               <div className="space-y-2">
-                <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1 font-semibold">
+                <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1">
                   <Cpu className="h-3.5 w-3.5 text-primary" /> AI Engine Dispatch Decision
                 </h4>
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
@@ -402,7 +402,7 @@ export default function DispatchLogsPage() {
 
               {/* HAL Envelope safety checks */}
               <div className="space-y-2">
-                <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1 font-semibold">
+                <h4 className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider flex items-center gap-1">
                   <Database className="h-3.5 w-3.5 text-primary" /> Safety Validation Envelope (HAL)
                 </h4>
                 <div className="p-3 border border-border rounded-xl space-y-2.5 bg-surface-container-low/40">

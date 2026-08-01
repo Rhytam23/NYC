@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dbQuerySafe, runtimeState } from "@/lib/mock-store";
+import { z } from "zod";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireAuth,
+  safeErrorResponse,
+} from "@/lib/security";
 
 /**
  * GET /api/v1/telemetry/community/{community_id}
@@ -12,8 +19,24 @@ export async function GET(
   { params }: { params: Promise<{ communityId: string }> },
 ) {
   const { communityId } = await params;
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
+
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "telemetry-community",
+    maxRequests: 60,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Authentication
+  const authResponse = requireAuth(request, meta);
+  if (authResponse) return authResponse;
+
+  // 3. Input Validation (UUID format)
+  if (!z.string().uuid().safeParse(communityId).success) {
+    return safeErrorResponse("INVALID_PARAMETER", "communityId must be a valid UUID.", meta, 400);
+  }
 
   try {
     const dbData = async () => {
@@ -100,25 +123,9 @@ export async function GET(
     return NextResponse.json({
       status: "success",
       data,
-      meta: {
-        timestamp,
-        request_id: reqId,
-      },
+      meta,
     });
   } catch {
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "COMMUNITY_DATA_FAILED",
-          message: "Failed to retrieve community aggregates.",
-        },
-        meta: {
-          timestamp,
-          request_id: reqId,
-        },
-      },
-      { status: 500 },
-    );
+    return safeErrorResponse("COMMUNITY_DATA_FAILED", "Failed to retrieve community aggregates.", meta, 500);
   }
 }

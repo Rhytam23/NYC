@@ -3,16 +3,14 @@ import { z } from "zod";
 import { MqttAdapter } from "@/lib/hardware/hal";
 import { prisma } from "@/lib/prisma";
 import { dbQuerySafe } from "@/lib/mock-store";
-
-/**
- * POST /api/v1/hardware/telemetry
- * Edge gateway pushes a batch of telemetry readings.
- * Source: hardware/protocols/api-contract.md
- *
- * Auth: Hardware JWT (pre-provisioned; validated via HARDWARE_EDGE_JWT_SECRET).
- * In this implementation, we trust the Authorization header format as a stub.
- * Full JWT validation will be implemented in the firmware sprint.
- */
+import {
+  buildMeta,
+  checkRateLimit,
+  isHardwareAuthenticated,
+  validateBodySize,
+  safeErrorResponse,
+  safeValidationError,
+} from "@/lib/security";
 
 const deviceHealthSchema = z.object({
   meter_online: z.boolean(),
@@ -23,7 +21,7 @@ const deviceHealthSchema = z.object({
 });
 
 const singleReadingSchema = z.object({
-  home_id: z.string().uuid(),
+  home_id: z.string().regex(/^[a-zA-Z0-9\-]+$/).max(64),
   timestamp: z.string().datetime(),
   telemetry_source: z.enum(["MQTT_EDGE", "CLOUD_API", "SIMULATED", "MANUAL"]),
   solar_gen_kw: z.number().nonnegative(),
@@ -47,28 +45,39 @@ const hardwareTelemetryBatchSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
 
-  // Stub: verify Authorization header is present (full JWT validation in firmware sprint)
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "HARDWARE_AUTH_INVALID",
-          message: "Missing or malformed Authorization header. Hardware JWT required.",
-        },
-        meta: { timestamp, request_id: reqId },
-      },
-      { status: 401 },
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "hardware-telemetry",
+    maxRequests: 60,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Body Size Validation (max 100KB)
+  const sizeResponse = await validateBodySize(request, 100 * 1024, meta);
+  if (sizeResponse) return sizeResponse;
+
+  // 3. Authentication
+  if (!isHardwareAuthenticated(request)) {
+    return safeErrorResponse(
+      "HARDWARE_AUTH_INVALID",
+      "Missing or malformed Authorization header. Hardware JWT required.",
+      meta,
+      401,
     );
   }
 
   try {
     const body = await request.json();
-    const payload = hardwareTelemetryBatchSchema.parse(body);
+    const parsed = hardwareTelemetryBatchSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return safeValidationError(parsed.error, meta);
+    }
+
+    const payload = parsed.data;
 
     let accepted = 0;
     let rejected = 0;
@@ -114,8 +123,6 @@ export async function POST(request: NextRequest) {
             grid_import_kw: reading.grid_import_kw,
             grid_export_kw: reading.grid_export_kw,
             grid_status: reading.grid_status,
-            // Note: telemetry_source and hardware_device_id will be added
-            // to the schema in the next DB migration sprint
           },
         });
       };
@@ -135,36 +142,11 @@ export async function POST(request: NextRequest) {
           rejected,
           pending_commands: pendingCommands,
         },
-        meta: { timestamp, request_id: reqId },
+        meta,
       },
       { status: 201 },
     );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: "error",
-          error: {
-            code: "HARDWARE_VALIDATION_FAILED",
-            message: "Hardware telemetry batch validation failed.",
-            details: error.flatten(),
-          },
-          meta: { timestamp, request_id: reqId },
-        },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "HARDWARE_INGEST_FAILED",
-          message: "Failed to process hardware telemetry batch.",
-        },
-        meta: { timestamp, request_id: reqId },
-      },
-      { status: 500 },
-    );
+  } catch {
+    return safeErrorResponse("HARDWARE_INGEST_FAILED", "Failed to process hardware telemetry batch.", meta, 500);
   }
 }

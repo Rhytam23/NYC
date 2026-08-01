@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { MqttAdapter } from "@/lib/hardware/hal";
-
-/**
- * POST /api/v1/hardware/heartbeat
- * Edge gateway health ping — confirms gateway is alive.
- * Source: hardware/protocols/api-contract.md
- *
- * Called by the edge gateway every 60 seconds.
- * Updates the gateway's last-seen timestamp in the HAL.
- */
+import {
+  buildMeta,
+  checkRateLimit,
+  isHardwareAuthenticated,
+  validateBodySize,
+  safeErrorResponse,
+  safeValidationError,
+} from "@/lib/security";
 
 const heartbeatSchema = z.object({
   gateway_id: z.string().min(1),
@@ -25,75 +24,64 @@ const heartbeatSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
 
-  const authHeader = request.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "HARDWARE_AUTH_INVALID",
-          message: "Hardware JWT required.",
-        },
-        meta: { timestamp, request_id: reqId },
-      },
-      { status: 401 },
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "hardware-heartbeat",
+    maxRequests: 60,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Body Size Validation (max 10KB)
+  const sizeResponse = await validateBodySize(request, 10 * 1024, meta);
+  if (sizeResponse) return sizeResponse;
+
+  // 3. Authentication
+  if (!isHardwareAuthenticated(request)) {
+    return safeErrorResponse(
+      "HARDWARE_AUTH_INVALID",
+      "Hardware JWT required.",
+      meta,
+      401,
     );
   }
 
   try {
     const body = await request.json();
-    const payload = heartbeatSchema.parse(body);
+    const parsed = heartbeatSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return safeValidationError(parsed.error, meta);
+    }
+
+    const payload = parsed.data;
 
     // Update HAL gateway heartbeat cache
     MqttAdapter.updateGatewayHeartbeat(payload.gateway_id);
 
-    // Log heartbeat details for monitoring (in production, write to HardwareHealthLog)
-    const healthSummary = {
-      gateway_id: payload.gateway_id,
-      uptime_hours: (payload.uptime_seconds / 3600).toFixed(1),
-      devices: `${payload.modbus_devices_online}/${payload.modbus_devices_total} online`,
-      buffer: payload.local_buffer_records > 0 ? `${payload.local_buffer_records} buffered` : "empty",
-      temperature: payload.temperature_c ? `${payload.temperature_c.toFixed(1)}°C` : "N/A",
-    };
-    console.log("[Hardware Heartbeat]", healthSummary);
+    // Guard console logs in production
+    if (process.env.NODE_ENV !== "production") {
+      const healthSummary = {
+        gateway_id: payload.gateway_id,
+        uptime_hours: (payload.uptime_seconds / 3600).toFixed(1),
+        devices: `${payload.modbus_devices_online}/${payload.modbus_devices_total} online`,
+        buffer: payload.local_buffer_records > 0 ? `${payload.local_buffer_records} buffered` : "empty",
+        temperature: payload.temperature_c ? `${payload.temperature_c.toFixed(1)}°C` : "N/A",
+      };
+      console.log("[Hardware Heartbeat]", healthSummary);
+    }
 
     return NextResponse.json({
       status: "success",
       data: {
         acknowledged: true,
-        server_time: timestamp,
+        server_time: meta.timestamp,
       },
-      meta: { timestamp, request_id: reqId },
+      meta,
     });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: "error",
-          error: {
-            code: "HARDWARE_VALIDATION_FAILED",
-            message: "Heartbeat payload validation failed.",
-            details: error.flatten(),
-          },
-          meta: { timestamp, request_id: reqId },
-        },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "HEARTBEAT_FAILED",
-          message: "Failed to process gateway heartbeat.",
-        },
-        meta: { timestamp, request_id: reqId },
-      },
-      { status: 500 },
-    );
+  } catch {
+    return safeErrorResponse("HEARTBEAT_FAILED", "Failed to process gateway heartbeat.", meta, 500);
   }
 }

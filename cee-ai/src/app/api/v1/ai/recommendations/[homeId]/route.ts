@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateGeminiRecommendations } from "@/lib/ai/decision-engine";
 import { runtimeState } from "@/lib/mock-store";
+import { z } from "zod";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireAuth,
+  safeErrorResponse,
+} from "@/lib/security";
 
 /**
  * GET /api/v1/ai/recommendations/{home_id}
@@ -11,8 +18,24 @@ export async function GET(
   { params }: { params: Promise<{ homeId: string }> },
 ) {
   const { homeId } = await params;
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
+
+  // 1. Rate Limiting (30 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "ai-recommendations",
+    maxRequests: 30,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Authentication
+  const authResponse = requireAuth(request, meta);
+  if (authResponse) return authResponse;
+
+  // 3. Input Validation (Safe alphanumeric/hyphen pattern)
+  if (!z.string().regex(/^[a-zA-Z0-9\-]+$/).max(64).safeParse(homeId).success) {
+    return safeErrorResponse("INVALID_PARAMETER", "homeId must be a valid alphanumeric/hyphen string.", meta, 400);
+  }
 
   try {
     // Determine resident parameters
@@ -44,25 +67,9 @@ export async function GET(
         home_id: homeId,
         recommendations,
       },
-      meta: {
-        timestamp,
-        request_id: reqId,
-      },
+      meta,
     });
   } catch {
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "AI_RECOMMENDATIONS_FAILED",
-          message: "Failed to generate AI insights tips.",
-        },
-        meta: {
-          timestamp,
-          request_id: reqId,
-        },
-      },
-      { status: 500 },
-    );
+    return safeErrorResponse("AI_RECOMMENDATIONS_FAILED", "Failed to generate AI insights tips.", meta, 500);
   }
 }

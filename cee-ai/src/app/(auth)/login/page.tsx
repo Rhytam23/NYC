@@ -49,28 +49,55 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg(null);
 
-    // Determine role and metadata based on input email
-    let role: "provider" | "consumer" | "admin" | null = null;
-    let demoName = "";
     const cleanEmail = email.trim().toLowerCase();
 
-    if (cleanEmail === "rajesh.sharma@palmmeadows.in") {
-      role = "provider";
-      demoName = "Rajesh Sharma";
-    } else if (cleanEmail === "meenakshi.sundaram@palmmeadows.in") {
-      role = "consumer";
-      demoName = "Dr. Meenakshi S.";
-    } else if (cleanEmail === "president.nair@palmmeadows.in") {
-      role = "admin";
-      demoName = "Col. V. K. Nair";
-    }
-
     try {
+      // 1. Call secure authentication API route
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: cleanEmail, password }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        setErrorMsg(result.error?.message || "Incorrect email address or password.");
+        setLoading(false);
+        return;
+      }
+
+      const { token, user } = result.data;
+
+      // 2. Set cryptographically signed session cookie (CWE-614 / SameSite=Lax, Secure)
+      // eslint-disable-next-line react-hooks/immutability
+      document.cookie = `cee_demo_session=${token}; path=/; max-age=86400; SameSite=Lax; Secure`;
+
+      // 3. Map role back to persona for frontend compatibility
+      let persona = "provider";
+      if (user.role === "RWA_ADMIN") persona = "admin";
+      else if (user.role === "COMMUNITY_MANAGER") persona = "manager";
+      else if (user.role === "PLATFORM_ADMIN") persona = "platform_admin";
+      else if (user.email === "meenakshi.sundaram@palmmeadows.in") persona = "consumer";
+
+      localStorage.setItem(
+        "cee_demo_user",
+        JSON.stringify({
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          persona,
+        }),
+      );
+
+      // 4. Authenticate with Supabase if it's a real client config
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const isRealClient = url && url.startsWith("http") && !url.includes("your-proj");
 
       if (isRealClient) {
-        let authResult = await supabase.auth.signInWithPassword({
+        const authResult = await supabase.auth.signInWithPassword({
           email: cleanEmail,
           password,
         });
@@ -78,72 +105,34 @@ export default function LoginPage() {
         // Auto-register demo account in Supabase Auth if credentials match but user doesn't exist
         if (
           authResult.error &&
-          role &&
-          password === "cee_secure_demo_pass_2026" &&
           (authResult.error.message.includes("Invalid login credentials") ||
             authResult.error.message.includes("Email not confirmed") ||
             authResult.error.status === 400)
         ) {
-          console.log(`Auto-registering demo account in Supabase Auth: ${cleanEmail}`);
           const signUpResult = await supabase.auth.signUp({
             email: cleanEmail,
             password,
             options: {
               data: {
-                name: demoName,
-                role: role === "admin" ? "RWA_ADMIN" : "RESIDENT",
+                name: user.name,
+                role: user.role,
               },
             },
           });
 
           if (!signUpResult.error) {
-            authResult = await supabase.auth.signInWithPassword({
+            await supabase.auth.signInWithPassword({
               email: cleanEmail,
               password,
             });
           }
         }
-
-        if (authResult.error) {
-          setErrorMsg(authResult.error.message);
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Successful login or stub client fallback
-      if (role) {
-        // eslint-disable-next-line react-hooks/immutability
-        document.cookie = `cee_demo_session=${role}; path=/; max-age=86400; SameSite=Lax`;
-        localStorage.setItem(
-          "cee_demo_user",
-          JSON.stringify({
-            email: cleanEmail,
-            name: demoName,
-            role: role === "admin" ? "RWA_ADMIN" : "RESIDENT",
-            persona: role,
-          }),
-        );
-      } else {
-        // Generic fallback for any email typed in mock mode
-        // eslint-disable-next-line react-hooks/immutability
-        document.cookie = `cee_demo_session=provider; path=/; max-age=86400; SameSite=Lax`;
-        localStorage.setItem(
-          "cee_demo_user",
-          JSON.stringify({
-            email: cleanEmail,
-            name: cleanEmail.split("@")[0],
-            role: "RESIDENT",
-            persona: "provider",
-          }),
-        );
       }
 
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
+    } catch {
       setErrorMsg("An unexpected error occurred during login.");
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -160,7 +149,6 @@ export default function LoginPage() {
     let demoEmail = "";
     let demoName = "";
     let userRole = "RESIDENT";
-    const demoPassword = "cee_secure_demo_pass_2026";
 
     switch (role) {
       case "provider":
@@ -191,11 +179,30 @@ export default function LoginPage() {
     }
 
     try {
-      // 1. Set the cookie so server middleware allows access immediately
-      // eslint-disable-next-line react-hooks/immutability
-      document.cookie = `cee_demo_session=${role}; path=/; max-age=86400; SameSite=Lax`;
+      // 1. Call secure authentication API route with isQuickLogin flag
+      const response = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: demoEmail, isQuickLogin: true }),
+      });
 
-      // 2. Always write the user metadata to localStorage so frontend pages can render persona views
+      const result = await response.json();
+
+      if (!response.ok) {
+        setErrorMsg(result.error?.message || "Quick login failed.");
+        setLoading(false);
+        return;
+      }
+
+      const { token } = result.data;
+
+      // 2. Set cryptographically signed session cookie (CWE-614 / SameSite=Lax, Secure)
+      // eslint-disable-next-line react-hooks/immutability
+      document.cookie = `cee_demo_session=${token}; path=/; max-age=86400; SameSite=Lax; Secure`;
+
+      // 3. Always write the user metadata to localStorage so frontend pages can render persona views
       localStorage.setItem(
         "cee_demo_user",
         JSON.stringify({
@@ -206,12 +213,14 @@ export default function LoginPage() {
         }),
       );
 
-      // 3. Authenticate with Supabase if it's not the stub client
+      // 4. Authenticate with Supabase if it's a real client
       const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const isRealClient = url && url.startsWith("http") && !url.includes("your-proj");
 
       if (isRealClient) {
-        let authResult = await supabase.auth.signInWithPassword({
+        // Use the demo password for Supabase synchronization
+        const demoPassword = "cee_secure_demo_pass_2026";
+        const authResult = await supabase.auth.signInWithPassword({
           email: demoEmail,
           password: demoPassword,
         });
@@ -223,7 +232,6 @@ export default function LoginPage() {
             authResult.error.message.includes("Email not confirmed") ||
             authResult.error.status === 400)
         ) {
-          console.log(`Auto-registering demo account in Supabase Auth: ${demoEmail}`);
           const signUpResult = await supabase.auth.signUp({
             email: demoEmail,
             password: demoPassword,
@@ -236,24 +244,18 @@ export default function LoginPage() {
           });
 
           if (!signUpResult.error) {
-            authResult = await supabase.auth.signInWithPassword({
+            await supabase.auth.signInWithPassword({
               email: demoEmail,
               password: demoPassword,
             });
           }
         }
-
-        if (authResult.error) {
-          console.warn("Supabase Auth failed, proceeding in frontend simulation mode:", authResult.error.message);
-        }
       }
 
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
-      console.warn("Auth exception occurred, proceeding in fallback simulation mode:", err);
-      router.push("/dashboard");
-      router.refresh();
+    } catch {
+      setErrorMsg("An unexpected error occurred during quick login.");
     } finally {
       setLoading(false);
     }
@@ -290,7 +292,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {errorMsg && (
-              <div className="rounded-(--radius-md) bg-destructive/10 border border-destructive/20 p-3 text-body-sm text-destructive flex items-start gap-2.5">
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-3 text-body-sm text-destructive flex items-start gap-2.5">
                 <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5" />
                 <span>{errorMsg}</span>
               </div>

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hal } from "@/lib/hardware/hal";
 import { MqttAdapter } from "@/lib/hardware/hal";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireAuth,
+  safeErrorResponse,
+} from "@/lib/security";
 
 /**
  * GET /api/v1/hardware/status
@@ -12,12 +18,23 @@ import { MqttAdapter } from "@/lib/hardware/hal";
  *   - Dashboard (to display hardware connection status)
  */
 export async function GET(request: NextRequest) {
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
+
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "hardware-status",
+    maxRequests: 60,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Authentication
+  const authResponse = requireAuth(request, meta);
+  if (authResponse) return authResponse;
 
   // Check for hardware JWT (gateway) or user session (dashboard)
   const authHeader = request.headers.get("Authorization");
-  const isGatewayRequest = authHeader?.startsWith("Bearer hw-");
+  const isGatewayRequest = authHeader?.startsWith("Bearer hw-") || authHeader?.startsWith("Bearer ");
 
   try {
     const systemStatus = await hal.getSystemStatus();
@@ -30,7 +47,7 @@ export async function GET(request: NextRequest) {
           hardware_mode: systemStatus.mode,
           active_source: systemStatus.active_source,
           mqtt_available: systemStatus.mqtt_available,
-          server_time: timestamp,
+          server_time: meta.timestamp,
           pending_commands: [], // Commands are delivered via MQTT; REST polling is fallback
           config: {
             staleness_ttl_seconds: parseInt(
@@ -41,7 +58,7 @@ export async function GET(request: NextRequest) {
             modbus_poll_slow_seconds: 60,
           },
         },
-        meta: { timestamp, request_id: reqId },
+        meta,
       });
     }
 
@@ -56,20 +73,10 @@ export async function GET(request: NextRequest) {
         status_color: getStatusColor(systemStatus.active_source),
         gateway_online: MqttAdapter.isGatewayOnline("gw-block-a"), // TODO: dynamic gateway ID
       },
-      meta: { timestamp, request_id: reqId },
+      meta,
     });
   } catch {
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "HARDWARE_STATUS_FAILED",
-          message: "Failed to retrieve hardware status.",
-        },
-        meta: { timestamp, request_id: reqId },
-      },
-      { status: 500 },
-    );
+    return safeErrorResponse("HARDWARE_STATUS_FAILED", "Failed to retrieve hardware status.", meta, 500);
   }
 }
 

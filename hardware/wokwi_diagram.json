@@ -1,251 +1,114 @@
 {
   "version": 1,
-  "author": "Lumina Community Energy AI",
+  "author": "Lumina AI OS",
   "editor": "wokwi",
   "parts": [
-    {
-      "type": "wokwi-esp32",
-      "id": "esp",
-      "top": 0,
-      "left": 0,
-      "attrs": {}
+    { "type": "wokwi-esp32", "id": "esp", "top": 100, "left": 180, "attrs": {} },
+    { 
+      "type": "wokwi-i2c-lcd1602", 
+      "id": "lcd", 
+      "top": -120, 
+      "left": 140, 
+      "attrs": { "address": "0x27", "label": "Lumina Telemetry Display" } 
     },
-    {
-      "type": "wokwi-slide-switch",
-      "id": "grid_sw",
-      "top": -120,
-      "left": -150,
-      "attrs": {}
+    { 
+      "type": "wokwi-slide-switch", 
+      "id": "grid_sw", 
+      "top": -30, 
+      "left": -120, 
+      "attrs": { "label": "Utility Grid Node" } 
     },
-    {
-      "type": "wokwi-potentiometer",
-      "id": "bat_pot",
-      "top": 120,
-      "left": -150,
-      "attrs": {}
+    { 
+      "type": "wokwi-potentiometer", 
+      "id": "pot", 
+      "top": 100, 
+      "left": -120, 
+      "attrs": { "label": "Battery SoC (%)" } 
     },
-    {
-      "type": "wokwi-photoresistor",
-      "id": "solar_ldr",
-      "top": 240,
-      "left": -150,
-      "attrs": {}
+    { 
+      "type": "wokwi-photoresistor", 
+      "id": "ldr", 
+      "top": 250, 
+      "left": -120, 
+      "attrs": { "label": "Solar PV Input" } 
     },
-    {
-      "type": "wokwi-i2c-lcd1602",
-      "id": "lcd",
-      "top": -150,
-      "left": 150,
-      "attrs": {
-        "address": "0x27"
-      }
+    { 
+      "type": "wokwi-relay-module", 
+      "id": "relay1", 
+      "top": 50, 
+      "left": 480, 
+      "attrs": { "label": "Relay 1: Essential Load Switch" } 
     },
-    {
-      "type": "wokwi-led",
-      "id": "led_essential",
-      "top": 100,
-      "left": 200,
-      "attrs": {
-        "color": "green"
-      }
+    { 
+      "type": "wokwi-relay-module", 
+      "id": "relay2", 
+      "top": 210, 
+      "left": 480, 
+      "attrs": { "label": "Relay 2: Non-Essential Load Switch" } 
     },
-    {
-      "type": "wokwi-led",
-      "id": "led_non_essential",
-      "top": 180,
-      "left": 200,
-      "attrs": {
-        "color": "red"
-      }
+    { 
+      "type": "wokwi-resistor", 
+      "id": "r1", 
+      "top": 90, 
+      "left": 660, 
+      "attrs": { "value": "220" } 
     },
-    {
-      "type": "wokwi-resistor",
-      "id": "r_ess",
-      "top": 100,
-      "left": 120,
-      "attrs": {
-        "value": "220"
-      }
+    { 
+      "type": "wokwi-resistor", 
+      "id": "r2", 
+      "top": 250, 
+      "left": 660, 
+      "attrs": { "value": "220" } 
     },
-    {
-      "type": "wokwi-resistor",
-      "id": "r_non_ess",
-      "top": 180,
-      "left": 120,
-      "attrs": {
-        "value": "220"
-      }
+    { 
+      "type": "wokwi-led", 
+      "id": "led_essential", 
+      "top": 80, 
+      "left": 760, 
+      "attrs": { "color": "green", "label": "Essential Load Node (Water Pump/Lifts)" } 
     },
-    {
-      "type": "wokwi-resistor",
-      "id": "r_ldr",
-      "top": 240,
-      "left": -80,
-      "attrs": {
-        "value": "10000"
-      }
+    { 
+      "type": "wokwi-led", 
+      "id": "led_nonessential", 
+      "top": 240, 
+      "left": 760, 
+      "attrs": { "color": "red", "label": "Non-Essential Load Node (Appliances/EV)" } 
     }
   ],
   "connections": [
-    [
-      "esp:GND.1",
-      "grid_sw:GND",
-      "black",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:GND.1",
-      "bat_pot:GND",
-      "black",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:GND.1",
-      "r_ldr:2",
-      "black",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:GND.1",
-      "lcd:GND",
-      "black",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:GND.1",
-      "led_essential:C",
-      "black",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:GND.1",
-      "led_non_essential:C",
-      "black",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:3V3",
-      "grid_sw:VCC",
-      "red",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:3V3",
-      "bat_pot:VCC",
-      "red",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:3V3",
-      "solar_ldr:VCC",
-      "red",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:3V3",
-      "lcd:VCC",
-      "red",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "grid_sw:SND",
-      "esp:12",
-      "blue",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "bat_pot:SIG",
-      "esp:34",
-      "orange",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "solar_ldr:SIG",
-      "esp:35",
-      "yellow",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "solar_ldr:SIG",
-      "r_ldr:1",
-      "yellow",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "lcd:SDA",
-      "esp:21",
-      "green",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "lcd:SCL",
-      "esp:22",
-      "green",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:18",
-      "r_ess:1",
-      "green",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "r_ess:2",
-      "led_essential:A",
-      "green",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "esp:19",
-      "r_non_ess:1",
-      "red",
-      [
-        "v0"
-      ]
-    ],
-    [
-      "r_non_ess:2",
-      "led_non_essential:A",
-      "red",
-      [
-        "v0"
-      ]
-    ]
+    [ "esp:GND.1", "lcd:GND", "black", [ "v0" ] ],
+    [ "esp:5V", "lcd:VCC", "red", [ "v0" ] ],
+    [ "esp:21", "lcd:SDA", "green", [ "v0" ] ],
+    [ "esp:22", "lcd:SCL", "blue", [ "v0" ] ],
+
+    [ "esp:GND.1", "grid_sw:1", "black", [ "v0" ] ],
+    [ "esp:13", "grid_sw:2", "yellow", [ "v0" ] ],
+    [ "esp:3V3", "grid_sw:3", "red", [ "v0" ] ],
+
+    [ "esp:3V3", "pot:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "pot:GND", "black", [ "v0" ] ],
+    [ "esp:34", "pot:SIG", "green", [ "v0" ] ],
+
+    [ "esp:3V3", "ldr:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "ldr:GND", "black", [ "v0" ] ],
+    [ "esp:35", "ldr:AO", "cyan", [ "v0" ] ],
+
+    [ "esp:5V", "relay1:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "relay1:GND", "black", [ "v0" ] ],
+    [ "esp:18", "relay1:IN", "orange", [ "v0" ] ],
+    [ "esp:5V", "relay1:COM", "red", [ "v0" ] ],
+
+    [ "esp:5V", "relay2:VCC", "red", [ "v0" ] ],
+    [ "esp:GND.1", "relay2:GND", "black", [ "v0" ] ],
+    [ "esp:19", "relay2:IN", "purple", [ "v0" ] ],
+    [ "esp:5V", "relay2:COM", "red", [ "v0" ] ],
+
+    [ "relay1:NO", "r1:1", "green", [ "v0" ] ],
+    [ "r1:2", "led_essential:A", "green", [ "v0" ] ],
+    [ "led_essential:C", "esp:GND.1", "black", [ "v0" ] ],
+
+    [ "relay2:NO", "r2:1", "red", [ "v0" ] ],
+    [ "r2:2", "led_nonessential:A", "red", [ "v0" ] ],
+    [ "led_nonessential:C", "esp:GND.1", "black", [ "v0" ] ]
   ]
 }

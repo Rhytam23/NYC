@@ -1,4 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireAuth,
+  safeErrorResponse,
+} from "@/lib/security";
 
 // Sample dispatch logs
 const MOCK_DISPATCH_LOGS = [
@@ -59,36 +66,59 @@ const MOCK_DISPATCH_LOGS = [
 ];
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const query = searchParams.get("query")?.toLowerCase() || "";
-  const type = searchParams.get("type") || "ALL";
-  const status = searchParams.get("status") || "ALL";
+  const meta = buildMeta();
 
-  let filtered = MOCK_DISPATCH_LOGS;
-
-  if (query) {
-    filtered = filtered.filter(
-      (log) =>
-        log.id.toLowerCase().includes(query) ||
-        log.summary.toLowerCase().includes(query) ||
-        log.type.toLowerCase().includes(query)
-    );
-  }
-
-  if (type !== "ALL") {
-    filtered = filtered.filter((log) => log.type === type);
-  }
-
-  if (status !== "ALL") {
-    filtered = filtered.filter((log) => log.status === status);
-  }
-
-  return NextResponse.json({
-    status: "success",
-    data: filtered,
-    meta: {
-      total: filtered.length,
-      timestamp: new Date().toISOString(),
-    },
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "hardware-dispatch-logs",
+    maxRequests: 60,
+    windowSeconds: 60,
   });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Authentication
+  const authResponse = requireAuth(request, meta);
+  if (authResponse) return authResponse;
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const queryRaw = searchParams.get("query") || "";
+    const typeRaw = searchParams.get("type") || "ALL";
+    const statusRaw = searchParams.get("status") || "ALL";
+
+    // Sanitize and validate inputs
+    const query = z.string().max(100).safeParse(queryRaw).success ? queryRaw.toLowerCase() : "";
+    const type = z.string().max(50).safeParse(typeRaw).success ? typeRaw : "ALL";
+    const status = z.string().max(50).safeParse(statusRaw).success ? statusRaw : "ALL";
+
+    let filtered = MOCK_DISPATCH_LOGS;
+
+    if (query) {
+      filtered = filtered.filter(
+        (log) =>
+          log.id.toLowerCase().includes(query) ||
+          log.summary.toLowerCase().includes(query) ||
+          log.type.toLowerCase().includes(query)
+      );
+    }
+
+    if (type !== "ALL") {
+      filtered = filtered.filter((log) => log.type === type);
+    }
+
+    if (status !== "ALL") {
+      filtered = filtered.filter((log) => log.status === status);
+    }
+
+    return NextResponse.json({
+      status: "success",
+      data: filtered,
+      meta: {
+        total: filtered.length,
+        ...meta,
+      },
+    });
+  } catch {
+    return safeErrorResponse("LOGS_FETCH_FAILED", "Failed to retrieve dispatch logs.", meta, 500);
+  }
 }

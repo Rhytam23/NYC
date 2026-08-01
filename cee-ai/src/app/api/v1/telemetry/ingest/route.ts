@@ -2,9 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { dbQuerySafe } from "@/lib/mock-store";
 import { z } from "zod";
+import {
+  buildMeta,
+  checkRateLimit,
+  requireAuth,
+  validateBodySize,
+  safeErrorResponse,
+  safeValidationError,
+} from "@/lib/security";
 
 const telemetryIngestSchema = z.object({
-  home_id: z.string().uuid(),
+  home_id: z.string().regex(/^[a-zA-Z0-9\-]+$/).max(64),
   timestamp: z.string().datetime(),
   solar_gen_kw: z.number().nonnegative(),
   battery_soc_pct: z.number().min(0).max(100),
@@ -21,12 +29,33 @@ const telemetryIngestSchema = z.object({
  * Source: API_SPEC.md §2.1
  */
 export async function POST(request: NextRequest) {
-  const reqId = `req-${Math.random().toString(36).substr(2, 9)}`;
-  const timestamp = new Date().toISOString();
+  const meta = buildMeta();
+
+  // 1. Rate Limiting (60 requests per minute)
+  const rateLimitResponse = checkRateLimit(request, {
+    key: "telemetry-ingest",
+    maxRequests: 60,
+    windowSeconds: 60,
+  });
+  if (rateLimitResponse) return rateLimitResponse;
+
+  // 2. Body Size Validation (max 10KB)
+  const sizeResponse = await validateBodySize(request, 10 * 1024, meta);
+  if (sizeResponse) return sizeResponse;
+
+  // 3. Authentication
+  const authResponse = requireAuth(request, meta);
+  if (authResponse) return authResponse;
 
   try {
     const body = await request.json();
-    const payload = telemetryIngestSchema.parse(body);
+    const parsed = telemetryIngestSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return safeValidationError(parsed.error, meta);
+    }
+
+    const payload = parsed.data;
 
     // Write to database
     const dbWrite = async () => {
@@ -55,47 +84,13 @@ export async function POST(request: NextRequest) {
         status: "success",
         data: {
           recorded: true,
-          ingested_at: timestamp,
+          ingested_at: meta.timestamp,
         },
-        meta: {
-          timestamp,
-          request_id: reqId,
-        },
+        meta,
       },
       { status: 201 },
     );
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: "error",
-          error: {
-            code: "VALIDATION_FAILED",
-            message: "Telemetry schema validation failed.",
-            details: error.flatten(),
-          },
-          meta: {
-            timestamp,
-            request_id: reqId,
-          },
-        },
-        { status: 400 },
-      );
-    }
-
-    return NextResponse.json(
-      {
-        status: "error",
-        error: {
-          code: "INGEST_FAILED",
-          message: "Failed to ingest telemetry stream.",
-        },
-        meta: {
-          timestamp,
-          request_id: reqId,
-        },
-      },
-      { status: 500 },
-    );
+  } catch {
+    return safeErrorResponse("INGEST_FAILED", "Failed to ingest telemetry stream.", meta, 500);
   }
 }

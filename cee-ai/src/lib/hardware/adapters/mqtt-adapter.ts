@@ -74,10 +74,12 @@ export class MqttAdapter implements HalAdapter {
   ): Promise<HardwareDispatchAck> {
     // TODO (firmware sprint): Publish to MQTT topic cee/{community_id}/{home_id}/dispatch
     // For now, log the command — it will be picked up by the gateway on its next poll
-    console.log(
-      `[MqttAdapter] STUB: Dispatch command queued for ${command.home_id}:`,
-      `${command.target_action} @ ${command.power_kw} kW`,
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[MqttAdapter] STUB: Dispatch command queued for ${command.home_id}:`,
+        `${command.target_action} @ ${command.power_kw} kW`,
+      );
+    }
 
     return {
       command_id: command.command_id,

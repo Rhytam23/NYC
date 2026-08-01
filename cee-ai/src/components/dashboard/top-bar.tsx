@@ -196,7 +196,9 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
       const supabase = createClient();
       await supabase.auth.signOut();
     } catch (e) {
-      console.warn("Supabase sign out bypassed:", e);
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Supabase sign out bypassed:", e);
+      }
     }
     // Redirect to login page
     router.push("/login");
@@ -219,7 +221,7 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
           </Button>
         )}
         <div className="flex items-center gap-2 sm:gap-4">
-          <h1 className="font-headline text-base sm:text-lg font-semibold text-foreground truncate max-w-[120px] sm:max-w-none">
+          <h1 className="font-headline text-base sm:text-lg font-semibold text-foreground truncate max-w-30 sm:max-w-none">
             Resident Dashboard
           </h1>
           <Badge
@@ -268,7 +270,7 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
               <User className="h-4 w-4 text-primary" />
             </div>
-            <span className="text-sm font-medium text-foreground hidden sm:inline truncate max-w-[80px]">
+            <span className="text-sm font-medium text-foreground hidden sm:inline truncate max-w-20">
               {userName}
             </span>
           </div>
@@ -299,7 +301,7 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
                   </div>
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-headline font-bold text-sm text-foreground truncate block max-w-[140px]">
+                      <span className="font-headline font-bold text-sm text-foreground truncate block max-w-35">
                         {userProfile.name}
                       </span>
                       <span className="h-2 w-2 rounded-full bg-green-500 shrink-0 animate-pulse" title="Online" />
@@ -317,13 +319,13 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
                 <div className="space-y-2 bg-surface-container-low/40 p-2.5 rounded-xl border border-border/60">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground font-semibold">Email</span>
-                    <span className="text-foreground font-medium truncate max-w-[140px]" title={userProfile.email}>
+                    <span className="text-foreground font-medium truncate max-w-35" title={userProfile.email}>
                       {userProfile.email}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground font-semibold">Community</span>
-                    <span className="text-foreground font-medium truncate max-w-[140px]">
+                    <span className="text-foreground font-medium truncate max-w-35">
                       {userProfile.org}
                     </span>
                   </div>
@@ -421,7 +423,7 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
                     </button>
                   )}
                 </div>
-                <div className="max-h-[250px] overflow-y-auto space-y-2">
+                <div className="max-h-62.5 overflow-y-auto space-y-2">
                   {notifications.map((notif) => (
                     <div
                       key={notif.id}
@@ -475,7 +477,7 @@ export function DashboardTopBar({ onMenuClick }: DashboardTopBarProps) {
             </div>
 
             {/* Results */}
-            <div className="max-h-[300px] overflow-y-auto space-y-1">
+            <div className="max-h-75 overflow-y-auto space-y-1">
               {filteredItems.map((item) => (
                 <button
                   key={item.path}

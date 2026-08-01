@@ -9,73 +9,101 @@
  */
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { verifySessionToken } from "./lib/security";
 
 export async function proxy(request: NextRequest) {
+  // Generate a unique Request ID for distributed tracing (CWE-117/OWASP A09)
+  const requestId = "req-" + crypto.randomUUID().split("-")[0];
+
   let supabaseResponse = NextResponse.next({
-    request,
+    request: {
+      headers: new Headers(request.headers),
+    },
   });
+
+  // Inject Request ID into request & response headers
+  supabaseResponse.headers.set("X-Request-Id", requestId);
+  request.headers.set("X-Request-Id", requestId);
 
   const hasEnv =
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
     !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("your-proj");
 
-  if (!hasEnv) {
-    return supabaseResponse;
-  }
+  let user = null;
 
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options: _options }) =>
-              request.cookies.set(name, value),
-            );
-            supabaseResponse = NextResponse.next({
-              request,
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, options),
-            );
+  if (hasEnv) {
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value, options: _options }) =>
+                request.cookies.set(name, value),
+              );
+              supabaseResponse = NextResponse.next({
+                request: {
+                  headers: new Headers(request.headers),
+                },
+              });
+              cookiesToSet.forEach(({ name, value, options }) =>
+                supabaseResponse.cookies.set(name, value, options),
+              );
+            },
           },
         },
-      },
-    );
+      );
 
-    // Refresh session if expired
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    // Check for quick demo session cookie
-    const demoSession = request.cookies.get("cee_demo_session")?.value;
-    const hasSession = user || demoSession;
-
-    // Route protection rules:
-    // If user is not logged in and is trying to access dashboard, redirect to login
-    const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
-
-    if (!hasSession && isDashboardRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
+      // Refresh session if expired
+      const {
+        data: { user: supabaseUser },
+      } = await supabase.auth.getUser();
+      user = supabaseUser;
+    } catch {
+      // Supabase loading bypassed gracefully
     }
+  }
 
-    // If user is logged in and trying to access login page, redirect to dashboard
-    const isLoginRoute = request.nextUrl.pathname === "/login";
-    if (hasSession && isLoginRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
+  // Check for quick demo session cookie & cryptographically verify it
+  const demoSession = request.cookies.get("cee_demo_session")?.value;
+  let hasDemoSession = false;
+
+  if (demoSession) {
+    const verified = verifySessionToken(demoSession);
+    if (verified) {
+      hasDemoSession = true;
+    } else if (process.env.NODE_ENV !== "production") {
+      // In development, allow raw persona strings for easy manual testing
+      const legacyRoles = ["provider", "consumer", "admin", "manager", "platform_admin"];
+      if (legacyRoles.includes(demoSession)) {
+        hasDemoSession = true;
+      }
     }
-  } catch (error) {
-    console.warn("Supabase SSR Auth Proxy initialization bypassed:", error);
+  }
+
+  const hasSession = !!user || hasDemoSession;
+
+  // Route protection rules:
+  // If user is not logged in and is trying to access dashboard, redirect to login
+  const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
+
+  if (!hasSession && isDashboardRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  // If user is logged in and trying to access login page, redirect to dashboard
+  const isLoginRoute = request.nextUrl.pathname === "/login";
+  if (hasSession && isLoginRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

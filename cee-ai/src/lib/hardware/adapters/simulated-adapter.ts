@@ -104,11 +104,13 @@ export class SimulatedAdapter implements HalAdapter {
     command: HardwareDispatchCommand,
   ): Promise<HardwareDispatchAck> {
     // In simulation mode: log the command and return a success ACK
-    console.log(
-      `[SimulatedAdapter] Dispatch command to ${command.home_id}:`,
-      `${command.target_action} @ ${command.power_kw} kW —`,
-      command.reasoning_audit_string,
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `[SimulatedAdapter] Dispatch command to ${command.home_id}:`,
+        `${command.target_action} @ ${command.power_kw} kW —`,
+        command.reasoning_audit_string,
+      );
+    }
 
     return {
       command_id: command.command_id,

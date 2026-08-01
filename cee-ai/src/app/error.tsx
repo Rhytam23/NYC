@@ -20,12 +20,14 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Application runtime error:", error);
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Application runtime error:", error);
+    }
   }, [error]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-accent/20 via-background to-background -z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,var(--tw-gradient-stops))] from-accent/20 via-background to-background -z-10" />
 
       <Card className="max-w-md w-full border border-border shadow-none">
         <CardHeader className="text-center pb-2">
