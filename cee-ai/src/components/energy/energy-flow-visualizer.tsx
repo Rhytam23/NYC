@@ -1,7 +1,7 @@
 "use client";
 
 import { Sun, Battery, Home, Zap } from "lucide-react";
-import { formatEnergy } from "@/lib/utils";
+import { formatEnergy, cn } from "@/lib/utils";
 
 interface EnergyFlowProps {
   solarGen: number;
@@ -30,6 +30,7 @@ export function EnergyFlowVisualizer({
 }: EnergyFlowProps) {
   const isCharging = batteryFlow > 0;
   const isExporting = netExport > 0;
+  const isOutage = gridStatus.includes("OUTAGE");
 
   // Animation speed controls based on power levels
   const getDashSpeed = (kw: number) => {
@@ -189,22 +190,31 @@ export function EnergyFlowVisualizer({
           </div>
 
           {/* Node 4: Community Grid (320, 230) -> left: 80%, top: 76.66% */}
-          <div className="absolute top-[76.66%] left-[80%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-3 rounded-xl bg-surface-container border border-border/80 w-32 pointer-events-auto shadow-sm">
-            <Zap className="h-6 w-6 text-energy-solar mb-1" />
+          <div className={cn(
+            "absolute top-[76.66%] left-[80%] transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center p-3 rounded-xl border w-32 pointer-events-auto shadow-sm transition-colors duration-300",
+            isOutage 
+              ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/50" 
+              : "bg-surface-container border border-border/80 text-foreground"
+          )}>
+            <Zap className={cn("h-6 w-6 mb-1", isOutage ? "text-red-500 fill-red-100 animate-pulse" : "text-energy-solar")} />
             <span className="text-xs font-semibold text-muted-foreground uppercase">
               CEE Grid
             </span>
-            <span className="font-headline font-bold text-sm text-foreground mt-0.5">
-              {netExport > 0
-                ? `Exporting`
-                : netExport < 0
-                  ? `Importing`
-                  : `Idle`}
+            <span className={cn("font-headline font-bold text-sm mt-0.5", isOutage ? "text-red-600" : "text-foreground")}>
+              {isOutage 
+                ? "OFFLINE" 
+                : netExport > 0
+                  ? "Exporting"
+                  : netExport < 0
+                    ? "Importing"
+                    : "Idle"}
             </span>
             <span className="text-[10px] text-muted-foreground">
-              {netExport > 0
-                ? `+${netExport.toFixed(2)} kW`
-                : `${netExport.toFixed(2)} kW`}
+              {isOutage 
+                ? "0.00 kW" 
+                : netExport > 0
+                  ? `+${netExport.toFixed(2)} kW`
+                  : `${netExport.toFixed(2)} kW`}
             </span>
           </div>
         </div>
@@ -310,18 +320,31 @@ export function EnergyFlowVisualizer({
         </div>
 
         {/* Node 4: Community Grid (Middle Right) */}
-        <div className="absolute right-2 top-28.75 flex flex-col items-center p-2 rounded-lg bg-surface-container border border-border w-26 text-center">
-          <Zap className="h-5 w-5 text-energy-solar mb-0.5" />
+        <div className={cn(
+          "absolute right-2 top-28.75 flex flex-col items-center p-2 rounded-lg border w-26 text-center transition-colors duration-300 shadow-xs",
+          isOutage 
+            ? "bg-red-50 border-red-200 text-red-700 dark:bg-red-950/20 dark:border-red-900/50" 
+            : "bg-surface-container border border-border w-26 text-center"
+        )}>
+          <Zap className={cn("h-5 w-5 mb-0.5", isOutage ? "text-red-500 fill-red-100 animate-pulse" : "text-energy-solar")} />
           <span className="text-[9px] font-semibold text-muted-foreground uppercase">
             CEE Grid
           </span>
-          <span className="font-headline font-bold text-xs text-foreground mt-0.5">
-            {netExport > 0 ? `Export` : netExport < 0 ? `Import` : `Idle`}
+          <span className={cn("font-headline font-bold text-xs mt-0.5", isOutage ? "text-red-600" : "text-foreground")}>
+            {isOutage 
+              ? "OFFLINE" 
+              : netExport > 0 
+                ? "Export" 
+                : netExport < 0 
+                  ? "Import" 
+                  : "Idle"}
           </span>
           <span className="text-[9px] text-muted-foreground font-semibold">
-            {netExport > 0
-              ? `+${netExport.toFixed(1)}kW`
-              : `${netExport.toFixed(1)}kW`}
+            {isOutage 
+              ? "0.0kW" 
+              : netExport > 0
+                ? `+${netExport.toFixed(1)}kW`
+                : `${netExport.toFixed(1)}kW`}
           </span>
         </div>
 
