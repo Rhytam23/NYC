@@ -37,63 +37,102 @@ export default function ResidentDashboard() {
     "NORMAL" | "OUTAGE_DG_ACTIVE" | "CYCLONE_ALERT"
   >("NORMAL");
 
-  // Simulated realtime telemetry state corresponding to Rajesh's home
-  const [telemetry, setTelemetry] = useState(() => {
-    const base = {
-      solarGen: 5.82,
-      batterySoc: 78.5,
-      batteryFlow: 1.2, // charging
-      homeDemand: 2.1,
-      netExport: 2.52,
-      ceeCredits: 160.5,
-    };
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("cee_demo_user");
-      if (stored) {
-        try {
-          const user = JSON.parse(stored);
-          if (user.persona === "consumer") {
-            return {
-              solarGen: 0.0,
-              batterySoc: 0.0,
-              batteryFlow: 0.0,
-              homeDemand: 1.2,
-              netExport: -1.2,
-              ceeCredits: -40.0,
-            };
-          } else if (user.persona === "admin") {
-            return {
-              solarGen: 0.0,
-              batterySoc: 0.0,
-              batteryFlow: 0.0,
-              homeDemand: 3.5,
-              netExport: -3.5,
-              ceeCredits: -65.0,
-            };
-          } else if (user.persona === "manager") {
-            return {
-              solarGen: 284.5,
-              batterySoc: 81.2,
-              batteryFlow: 12.4,
-              homeDemand: 310.0,
-              netExport: 25.5,
-              ceeCredits: 4520.0,
-            };
-          } else if (user.persona === "platform_admin") {
-            return {
-              solarGen: 1284.5,
-              batterySoc: 83.5,
-              batteryFlow: 54.2,
-              homeDemand: 1520.0,
-              netExport: -235.5,
-              ceeCredits: 24500.0,
-            };
-          }
-        } catch {}
-      }
+  const [simulatedHour, setSimulatedHour] = useState(8);
+
+  // Interval to progress simulated time (1 hour every 4 seconds)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSimulatedHour((prev) => (prev + 1) % 24);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Compute telemetry values directly on render based on simulatedHour & gridStatus
+  let activePersona = "provider";
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("cee_demo_user");
+    if (stored) {
+      try {
+        const user = JSON.parse(stored);
+        if (user.persona) activePersona = user.persona;
+      } catch {}
     }
-    return base;
-  });
+  }
+
+  // Solar calculation: peaking at 12 PM (noon)
+  let solarVal = 0;
+  if (simulatedHour >= 6 && simulatedHour <= 18) {
+    solarVal = 6.8 * Math.sin(((simulatedHour - 6) / 12) * Math.PI);
+  }
+
+  // Load/Demand calculation
+  let demandVal = 1.6;
+  if (simulatedHour >= 8 && simulatedHour <= 10) {
+    demandVal = 2.4;
+  } else if (simulatedHour >= 18 && simulatedHour <= 21) {
+    demandVal = 3.2;
+  } else if (simulatedHour >= 23 || simulatedHour <= 5) {
+    demandVal = 0.8;
+  }
+
+  // Battery flow & SOC logic
+  let flowVal = 0;
+  let socVal = 50;
+
+  if (simulatedHour >= 6 && simulatedHour < 12) {
+    flowVal = solarVal - demandVal; // Charging (positive)
+    socVal = 40 + (simulatedHour - 6) * 9; // 40% to 85%
+  } else if (simulatedHour >= 12 && simulatedHour < 15) {
+    flowVal = -1.82; // Discharging
+    socVal = 85 - (simulatedHour - 12) * 5; // 85% to 70%
+  } else if (simulatedHour >= 15 && simulatedHour < 18) {
+    flowVal = solarVal - demandVal; // Charging slightly
+    socVal = 70 + (simulatedHour - 15) * 5; // 70% to 85%
+  } else {
+    flowVal = -demandVal * 0.4; // Discharging slowly
+    const hrsSince18 = simulatedHour >= 18 ? simulatedHour - 18 : simulatedHour + 6;
+    socVal = Math.max(20, 85 - hrsSince18 * 4.5); // 85% down to ~30%
+  }
+
+  // Adjust for different personas
+  if (activePersona === "consumer") {
+    solarVal = 0;
+    flowVal = 0;
+    socVal = 0;
+  } else if (activePersona === "admin") {
+    solarVal = solarVal * 0.8;
+    flowVal = flowVal * 0.8;
+  } else if (activePersona === "manager") {
+    solarVal = solarVal * 50;
+    demandVal = demandVal * 55;
+    flowVal = flowVal * 45;
+    socVal = 81.2;
+  } else if (activePersona === "platform_admin") {
+    solarVal = solarVal * 250;
+    demandVal = demandVal * 270;
+    flowVal = flowVal * 220;
+    socVal = 83.5;
+  }
+
+  // Outage logic override
+  if (gridStatus !== "NORMAL") {
+    solarVal = Math.min(solarVal, 3.2);
+    flowVal = -1.5;
+    demandVal = 2.0;
+    socVal = Math.max(35, socVal - 10);
+  }
+
+  const netExportVal = solarVal - demandVal - flowVal;
+  const ceeCreditsVal = 160.5 + (solarVal - demandVal) * 2;
+
+  const telemetry = {
+    solarGen: parseFloat(solarVal.toFixed(2)),
+    batterySoc: parseFloat(socVal.toFixed(1)),
+    batteryFlow: parseFloat(flowVal.toFixed(2)),
+    homeDemand: parseFloat(demandVal.toFixed(2)),
+    netExport: parseFloat(netExportVal.toFixed(2)),
+    ceeCredits: parseFloat((ceeCreditsVal < 0 ? 10 : ceeCreditsVal).toFixed(1)),
+  };
 
   const [userName] = useState(() => {
     if (typeof window !== "undefined") {
@@ -166,22 +205,8 @@ export default function ResidentDashboard() {
   const toggleOutageSimulation = () => {
     if (gridStatus === "NORMAL") {
       setGridStatus("OUTAGE_DG_ACTIVE");
-      setTelemetry((prev) => ({
-        ...prev,
-        solarGen: 3.2,
-        batteryFlow: -1.5, // discharging to support community
-        netExport: 1.2, // exporting virtual credits
-        homeDemand: 2.0, // shedding deferrable loads
-      }));
     } else {
       setGridStatus("NORMAL");
-      setTelemetry((prev) => ({
-        ...prev,
-        solarGen: 5.82,
-        batteryFlow: 1.2,
-        netExport: 2.52,
-        homeDemand: 2.1,
-      }));
     }
   };
 
@@ -203,6 +228,9 @@ export default function ResidentDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs py-1.5 px-3 font-semibold bg-muted/40 text-foreground border-border/80">
+            Simulated Time: {simulatedHour === 0 ? "12" : simulatedHour > 12 ? simulatedHour - 12 : simulatedHour}:00 {simulatedHour >= 12 ? "PM" : "AM"}
+          </Badge>
           <Button
             variant="outline"
             size="sm"
