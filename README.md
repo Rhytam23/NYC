@@ -168,3 +168,29 @@ pytest tests/test_ledger_invariants.py -v
 
 ---
 *Built by the CEE-AI Autonomous Startup Studio in Full Agent Mode.*
+
+---
+
+## 📖 Project Understanding (Future Reference)
+
+Community Energy Exchange AI (CEE-AI) is a software-only virtual microgrid platform for Indian
+gated communities: it nets surplus rooftop-solar/battery capacity from "surplus homes" against
+deficit homes' needs via a virtual energy-credit ledger (compliant with Section 12 of India's
+Electricity Act, since it never resells electricity directly), connecting to existing hardware
+(Enphase, GoodWe, SolarEdge, RWA ERPs) rather than requiring new proprietary hardware. A four-tier
+emergency triage locks life-critical loads (medical equipment) at a minimum battery reserve
+during outages.
+
+**Stack:** see `cee-ai/`, `docs/`, `hardware/` for implementation detail; positioned as a
+software-first, zero-proprietary-hardware MVP (v1.0).
+**Status:** ambitious clean-energy MVP concept with a clearly scoped v1 (software-only,
+API-integration-first).
+
+## 🎯 Where This Can Be Used
+
+- Clean-energy / smart-grid startup concept or pitch deck centerpiece.
+- Energy-policy and community-resilience demo material (the diesel-generator-cost comparison is
+  a strong, concrete talking point).
+- **Hackathons:** strong fit for clean-energy/climate-tech/smart-city tracks — the "0%
+  proprietary hardware" pitch and the medical-load emergency triage logic are compelling,
+  demoable details for judges.
