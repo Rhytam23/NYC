@@ -1,14 +1,57 @@
-# Community Energy Exchange AI (CEE-AI)
+<!-- Improved compatibility of back to top link: See: https://github.com/othneildrew/Best-README-Template/pull/73 -->
+<a id="readme-top"></a>
+
+<!-- PROJECT SHIELDS -->
+[![Contributors][contributors-shield]][contributors-url]
+[![Forks][forks-shield]][forks-url]
+[![Stargazers][stars-shield]][stars-url]
+[![Issues][issues-shield]][issues-url]
+
+
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+<h3 align="center">Community Energy Exchange AI (CEE-AI)</h3>
+
+  <p align="center">
+    The Software-First Autonomous Operating System for Community Energy Resilience & Virtual Peer-to-Peer Netting
+    <br />
+    <a href="https://github.com/Rhytam23/NYC"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/Rhytam23/NYC/issues/new?labels=bug">Report Bug</a>
+    &middot;
+    <a href="https://github.com/Rhytam23/NYC/issues/new?labels=enhancement">Request Feature</a>
+  </p>
+</div>
+
+
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li>
+      <a href="#about-the-project">About The Project</a>
+      <ul>
+        <li><a href="#built-with">Built With</a></li>
+      </ul>
+    </li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</details>
+
+
+<!-- ABOUT THE PROJECT -->
+## About The Project
+
 **The Software-First Autonomous Operating System for Community Energy Resilience & Virtual Peer-to-Peer Netting**
 
-[![Version](https://img.shields.io/badge/Version-1.0.0--MVP-059669?style=for-the-badge)](./project.json)
-[![Target Market](https://img.shields.io/badge/Target%20Market-India%20First%20%7C%20Global-0284C7?style=for-the-badge)](./docs/PRD.md)
-[![Hardware](https://img.shields.io/badge/Version%201.0-0%25%20Proprietary%20Hardware-7C3AED?style=for-the-badge)](./docs/HARDWARE_ROADMAP.md)
-[![Compliance](https://img.shields.io/badge/Compliance-Electricity%20Act%202003%20Sec%2012-D97706?style=for-the-badge)](./docs/ENERGY_LEDGER.md)
+### 1. Executive Summary: Why We Exist
 
----
-
-## 1. Executive Summary: Why We Exist
 In urban India—from Whitefield in Bangalore to DLF Phase 5 in Gurgaon—gated communities face an **asymmetric energy resilience crisis**:
 - **The Surplus Homes:** Over 30% of premium villas and apartments have installed 3–10 kWp rooftop solar, lithium-ion battery backup systems, and EV chargers. During daytime power cuts or regular grid operation, their batteries sit at 90–100% State of Charge (SOC) while excess solar is exported to DISCOMs for as low as **₹2.80/kWh**.
 - **The Deficit Homes:** 70% of homes rely on basic lead-acid inverters (1.5 kVA) that drain in 45 minutes, leaving elderly residents' oxygen concentrators, CPAP machines, and refrigeration without power.
@@ -29,14 +72,16 @@ In urban India—from Whitefield in Bangalore to DLF Phase 5 in Gurgaon—gated 
 
 ---
 
-## 2. Core Architectural Commandments
+### 2. Core Architectural Commandments
+
 1. **Software-First & Zero Hardware Gatekeeping (V1):** Connects to Enphase, GoodWe, SolarEdge, Genus smart sub-meters, and RWA ERPs (MyGate, NoBrokerHood) via cloud APIs in 15 minutes.
 2. **Virtual Energy Credit Ledger (`CEE Credits`):** We never sell retail electricity directly (complying with Section 12 of India’s Electricity Act 2003). Instead, our double-entry ledger nets clean community kilowatt-hours against monthly RWA Common Area Maintenance (CAM) billing.
 3. **Four-Tier Emergency Triage:** During grid outages, the AI Engine automatically locks **Tier 0 (Life Critical - Medical)** household batteries at a minimum 30% SOC floor and sheds **Tier 3 (Deferrable)** loads to maximize community survival time.
 
 ---
 
-## 3. System Topology & Visual Blueprint
+### 3. System Topology & Visual Blueprint
+
 
 ```
 +---------------------------------------------------------------------------------------------------------+
@@ -80,7 +125,8 @@ In urban India—from Whitefield in Bangalore to DLF Phase 5 in Gurgaon—gated 
 
 ---
 
-## 4. The Indian Energy Economics Benefit
+### 4. The Indian Energy Economics Benefit
+
 
 ```
         COST PER kWh (₹ INR) IN INDIAN GATED COMMUNITIES
@@ -107,10 +153,11 @@ In urban India—from Whitefield in Bangalore to DLF Phase 5 in Gurgaon—gated 
 
 ---
 
-## 5. Repository Structure & Documentation Index
+### 5. Repository Structure & Documentation Index
+
 This repository is an **AI-Ready Engineering Manifest** designed to be handed directly to AI coding agents with zero hallucination.
 
-### 5.1 `.agent/` — Agent Studio & Architectural Guardrails
+#### 5.1 `.agent/` — Agent Studio & Architectural Guardrails
 - [`architecture.md`](./.agent/architecture.md) — System boundaries, virtual microgrid physics, and legal compliance.
 - [`coding_rules.md`](./.agent/coding_rules.md) — Strict Python/TS standards, anti-hallucination rules, and zero-sum invariant tests.
 - [`product_rules.md`](./.agent/product_rules.md) — India-first design mandates, priority hierarchy, and product anti-patterns.
@@ -120,7 +167,7 @@ This repository is an **AI-Ready Engineering Manifest** designed to be handed di
 - [`prompts.md`](./.agent/prompts.md) — Persona prompts and instructions for AI coding and runtime optimization agents.
 - [`roadmap.md`](./.agent/roadmap.md) — Phased rollout from V1 MVP (Software-First) to V3 (Hardware Hubs).
 
-### 5.2 `docs/` — Complete Product, Technical & Business Specifications
+#### 5.2 `docs/` — Complete Product, Technical & Business Specifications
 - [`PRD.md`](./docs/PRD.md) — Extensive Product Requirements Document (Validation, Competitor Gap Analysis, MoSCoW priorities).
 - [`SYSTEM_ARCHITECTURE.md`](./docs/SYSTEM_ARCHITECTURE.md) — Microservices topology, data flows, DevOps, and EKS deployment.
 - [`BUSINESS_MODEL.md`](./docs/BUSINESS_MODEL.md) — Unit economics, pricing tiers, and MyGate/NoBrokerHood GTM strategy.
@@ -136,7 +183,7 @@ This repository is an **AI-Ready Engineering Manifest** designed to be handed di
 - [`PITCH.md`](./docs/PITCH.md) — 10-slide venture deck structure and 5-minute hackathon demo script.
 - [`FAQ.md`](./docs/FAQ.md) — Deep answers on Electricity Act Section 12, DG AMF synchronization, and RWA governance.
 
-### 5.3 `skills/` — Executable AI Agent Skills
+#### 5.3 `skills/` — Executable AI Agent Skills
 - [`energy-routing.skill`](./skills/energy-routing.skill) — P2P power matching and DG avoidance solver.
 - [`weather-intelligence.skill`](./skills/weather-intelligence.skill) — IMD alert ingestion and 100% pre-charge trigger.
 - [`battery-optimization.skill`](./skills/battery-optimization.skill) — LFP/NMC longevity and SOC floor preservation.
@@ -145,7 +192,7 @@ This repository is an **AI-Ready Engineering Manifest** designed to be handed di
 - [`notification.skill`](./skills/notification.skill) — Multi-channel WhatsApp/SMS emergency alerts.
 - [`settlement.skill`](./skills/settlement.skill) — Monthly CAM bill closing and MyGate/NoBrokerHood JSON export.
 
-### 5.4 Master Execution Backlog & Configuration
+#### 5.4 Master Execution Backlog & Configuration
 - [`tasks.md`](./tasks.md) — Step-by-step sprint execution plan for AI coding agents.
 - [`todo.md`](./todo.md) — Prioritized product and technical backlog.
 - [`.env.example`](./.env.example) — Full environment variable template with documentation.
@@ -154,7 +201,51 @@ This repository is an **AI-Ready Engineering Manifest** designed to be handed di
 
 ---
 
-## 6. Setup & AI Coding Agent Instructions
+### 📖 Project Understanding (Future Reference)
+
+
+Community Energy Exchange AI (CEE-AI) is a software-only virtual microgrid platform for Indian
+gated communities: it nets surplus rooftop-solar/battery capacity from "surplus homes" against
+deficit homes' needs via a virtual energy-credit ledger (compliant with Section 12 of India's
+Electricity Act, since it never resells electricity directly), connecting to existing hardware
+(Enphase, GoodWe, SolarEdge, RWA ERPs) rather than requiring new proprietary hardware. A four-tier
+emergency triage locks life-critical loads (medical equipment) at a minimum battery reserve
+during outages.
+
+**Stack:** see `cee-ai/`, `docs/`, `hardware/` for implementation detail; positioned as a
+software-first, zero-proprietary-hardware MVP (v1.0).
+**Status:** ambitious clean-energy MVP concept with a clearly scoped v1 (software-only,
+API-integration-first).
+
+### 🎯 Where This Can Be Used
+
+
+- Clean-energy / smart-grid startup concept or pitch deck centerpiece.
+- Energy-policy and community-resilience demo material (the diesel-generator-cost comparison is
+  a strong, concrete talking point).
+- **Hackathons:** strong fit for clean-energy/climate-tech/smart-city tracks — the "0%
+  proprietary hardware" pitch and the medical-load emergency triage logic are compelling,
+  demoable details for judges.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+### Built With
+
+* [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
+* [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
+* [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+* [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+* [![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- GETTING STARTED -->
+## Getting Started
+
+### 6. Setup & AI Coding Agent Instructions
+
 To begin implementing the codebase for Version 1.0:
 1. **Clone & Inspect:** Verify `/home/user/community-energy-ai` contains all documentation and rules.
 2. **Read Invariants:** Read `.agent/coding_rules.md`, `docs/DATABASE.md`, and `docs/API_SPEC.md` before generating any Python or TypeScript file.
@@ -171,26 +262,58 @@ pytest tests/test_ledger_invariants.py -v
 
 ---
 
-## 📖 Project Understanding (Future Reference)
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-Community Energy Exchange AI (CEE-AI) is a software-only virtual microgrid platform for Indian
-gated communities: it nets surplus rooftop-solar/battery capacity from "surplus homes" against
-deficit homes' needs via a virtual energy-credit ledger (compliant with Section 12 of India's
-Electricity Act, since it never resells electricity directly), connecting to existing hardware
-(Enphase, GoodWe, SolarEdge, RWA ERPs) rather than requiring new proprietary hardware. A four-tier
-emergency triage locks life-critical loads (medical equipment) at a minimum battery reserve
-during outages.
 
-**Stack:** see `cee-ai/`, `docs/`, `hardware/` for implementation detail; positioned as a
-software-first, zero-proprietary-hardware MVP (v1.0).
-**Status:** ambitious clean-energy MVP concept with a clearly scoped v1 (software-only,
-API-integration-first).
+<!-- ROADMAP -->
+## Roadmap
 
-## 🎯 Where This Can Be Used
+See the [open issues](https://github.com/Rhytam23/NYC/issues) for a full list of proposed features (and known issues).
 
-- Clean-energy / smart-grid startup concept or pitch deck centerpiece.
-- Energy-policy and community-resilience demo material (the diesel-generator-cost comparison is
-  a strong, concrete talking point).
-- **Hackathons:** strong fit for clean-energy/climate-tech/smart-city tracks — the "0%
-  proprietary hardware" pitch and the medical-load emergency triage logic are compelling,
-  demoable details for judges.
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- CONTRIBUTING -->
+## Contributing
+
+Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag "enhancement".
+Don't forget to give the project a star! Thanks again!
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- LICENSE -->
+## License
+
+No license file has been added to this repository yet.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- CONTACT -->
+## Contact
+
+Rhytam Biswas - [@Rhytam23](https://github.com/Rhytam23)
+
+Project Link: [https://github.com/Rhytam23/NYC](https://github.com/Rhytam23/NYC)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+
+<!-- MARKDOWN LINKS & IMAGES -->
+[contributors-shield]: https://img.shields.io/github/contributors/Rhytam23/NYC.svg?style=for-the-badge
+[contributors-url]: https://github.com/Rhytam23/NYC/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/Rhytam23/NYC.svg?style=for-the-badge
+[forks-url]: https://github.com/Rhytam23/NYC/network/members
+[stars-shield]: https://img.shields.io/github/stars/Rhytam23/NYC.svg?style=for-the-badge
+[stars-url]: https://github.com/Rhytam23/NYC/stargazers
+[issues-shield]: https://img.shields.io/github/issues/Rhytam23/NYC.svg?style=for-the-badge
+[issues-url]: https://github.com/Rhytam23/NYC/issues
